@@ -26,7 +26,7 @@ async function main() {
   console.log("Start test insert.");
   const { meta: insert } = await db
     .prepare(
-      `INSERT INTO ${tableName} (owner_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
+      `INSERT INTO ${tableName} (wallet_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
     )
     .bind("0x3Df03C634FF941B73221b4baAcaaACE1D943fb22", "History", 1, 1, 1)
     .run();

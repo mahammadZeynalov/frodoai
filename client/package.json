@@ -12,6 +12,7 @@
   },
   "//IMP START": "IMP START - Web3Auth Installation",
   "dependencies": {
+    "@biconomy/account": "^4.6.1",
     "@tableland/sdk": "^7.2.1",
     "@web3auth/base": "^8.12.2",
     "@web3auth/ethereum-provider": "^8.12.3",

@@ -19,7 +19,7 @@ contract Game is TablelandController, ERC721Holder {
         tableId = TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "id integer primary key, owner_address text, mode text, question_number integer, result integer, active integer",
+                "id integer primary key, wallet_address text, mode text, question_number integer, status text",
                 _TABLE_PREFIX
             )
         );
@@ -34,6 +34,19 @@ contract Game is TablelandController, ERC721Holder {
     // Sample getter to retrieve the table name
     function tableName() external view returns (string memory) {
         return SQLHelpers.toNameFromId(_TABLE_PREFIX, tableId);
+    }
+
+    function insertVal(string memory walletAddress) external {
+        TablelandDeployments.get().mutate(
+            address(this),
+            tableId,
+            SQLHelpers.toInsert(
+                _TABLE_PREFIX,
+                tableId,
+                "walletAddress",
+                SQLHelpers.quote(walletAddress)
+            )
+        );
     }
 
     function getPolicy(

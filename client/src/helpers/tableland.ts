@@ -16,9 +16,9 @@ export const initDbClient = async (provider: IProvider | null) => {
   console.log("Start test insert.");
   const { meta: insert } = await db
     .prepare(
-      `INSERT INTO ${tableName} (owner_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
+      `INSERT INTO ${tableName} (wallet_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
     )
-    .bind("0xC6c21DcA4Fa722f0d389894225C4E74918931867", "Geography", 1, 1, 1)
+    .bind("0xfFff8994CB3234232fff59Fd78f6525B88D6dB32", "Geography", 1, 1, 1)
     .run();
   await insert.txn?.wait();
 
