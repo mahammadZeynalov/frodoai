@@ -20,17 +20,20 @@ async function main() {
 
   // Connect to the database
   const db = new Database({ signer });
-  const tableName = "game_table_11155111_1792";
+  const tableName = "game_table_11155111_1793";
 
   // Insert a row into the table
+  console.log("Start test insert.");
   const { meta: insert } = await db
-  .prepare(`INSERT INTO ${tableName} (owner_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`)
-  .bind("0x3Df03C634FF941B73221b4baAcaaACE1D943fb22", "History", 1, 1, 1)
-  .run();
+    .prepare(
+      `INSERT INTO ${tableName} (owner_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
+    )
+    .bind("0x3Df03C634FF941B73221b4baAcaaACE1D943fb22", "History", 1, 1, 1)
+    .run();
 
   // Wait for transaction finality
   await insert.txn?.wait();
-
+  console.log("Start test query.");
   const { results } = await db.prepare(`SELECT * FROM ${tableName};`).all();
   console.log(results);
 }
