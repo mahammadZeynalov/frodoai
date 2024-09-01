@@ -18,7 +18,7 @@ export const initDbClient = async (provider: IProvider | null) => {
     .prepare(
       `INSERT INTO ${tableName} (owner_address, mode, question_number, result, active) VALUES (?, ?, ?, ?, ?);`
     )
-    .bind("0x3Df03C634FF941B73221b4baAcaaACE1D943fb22", "Geography", 1, 1, 1)
+    .bind("0xC6c21DcA4Fa722f0d389894225C4E74918931867", "Geography", 1, 1, 1)
     .run();
   await insert.txn?.wait();
 
