@@ -23,7 +23,8 @@
     "prettier:fix": "npm run prettier -- --write",
     "format": "npm run prettier:fix && npm run lint:fix",
     "verify": "hardhat run scripts/verify.ts --network",
-    "query": "hardhat run scripts/query.ts"
+    "query": "hardhat run scripts/query.ts",
+    "chat": "ts-node ask_ai/chat.ts"
   },
   "keywords": [
     "tableland",
