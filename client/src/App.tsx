@@ -7,9 +7,18 @@ import { Web3Auth } from "@web3auth/modal";
 import { useEffect, useState } from "react";
 import { Database } from "@tableland/sdk";
 import RPC from "./ethersRPC";
-import { CHAIN_CONFIG, CLIENT_ID, TABLE_NAME } from "./consts";
-import { ethers } from "ethers";
+import {
+  CHAIN_CONFIG,
+  CLIENT_ID,
+  DEFAULT_QUESTION_PROMPT,
+  GALADRIEL_CONTRACT_ADDRESS,
+  GALADRIEL_PRIVATE_KEY,
+  GALADRIEL_RPC_URL,
+  TABLE_NAME,
+} from "./consts";
+import { Contract, ethers, Wallet } from "ethers";
 import { GameStatus } from "./models";
+import GALADRIEL_ABI from "../../web3/ai/abis/OpenAiSimpleLLM.json";
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
   config: { chainConfig: CHAIN_CONFIG },
@@ -21,11 +30,22 @@ const web3auth = new Web3Auth({
   privateKeyProvider,
 });
 
+const provider = new ethers.JsonRpcProvider(GALADRIEL_RPC_URL);
+const wallet = new Wallet(GALADRIEL_PRIVATE_KEY, provider);
+const contract = new Contract(
+  GALADRIEL_CONTRACT_ADDRESS,
+  GALADRIEL_ABI,
+  wallet
+);
+
 function App() {
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [loggedIn, setLoggedIn] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [db, setDb] = useState<Database>();
+  const [isGaladrielLoading, setIsGaladrielLoading] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
 
   useEffect(() => {
     const init = async () => {
@@ -86,16 +106,59 @@ function App() {
       .prepare(
         `INSERT INTO ${TABLE_NAME} (wallet_address, mode, question_number, status) VALUES (?, ?, ?, ?);`
       )
-      .bind(walletAddress, "Math", 1, GameStatus.IN_PROGRESS)
+      .bind(walletAddress, "History", 1, GameStatus.IN_PROGRESS)
       .run();
     const response = await insert.txn?.wait();
     console.log("Create game response: ", response);
   };
 
+  const getQuestion = async () => {
+    console.log("Init question: ", DEFAULT_QUESTION_PROMPT);
+    setIsGaladrielLoading(true);
+    const transactionResponse = await contract.sendMessage(
+      DEFAULT_QUESTION_PROMPT
+    );
+    const receipt = await transactionResponse.wait();
+    console.log(`Message sent, tx hash: ${receipt.hash}`);
+    console.log(`Chat started with message: "${DEFAULT_QUESTION_PROMPT}"`);
+
+    // Read the LLM response on-chain
+    while (true) {
+      const response = await contract.response();
+      console.log(response);
+      if (response) {
+        setIsGaladrielLoading(false);
+        setCurrentQuestion(response);
+        console.log("Response from contract:", response);
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  };
+
+  const answerQuestion = async (answer: string) => {
+    setIsGaladrielLoading(true);
+    const transactionResponse = await contract.sendMessage(
+      `You asked me following question: ${currentQuestion}. My answer is ${answer}. If the answer is correct send YES. If the answer is not correct send NO. Do not send anything besides YES or NO.`
+    );
+    const receipt = await transactionResponse.wait();
+    console.log(`Message sent, tx hash: ${receipt.hash}`);
+
+    // Read the LLM response on-chain
+    while (true) {
+      const response = await contract.response();
+      console.log(response);
+      if (response) {
+        setIsGaladrielLoading(false);
+        console.log("Response from contract:", response);
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  };
+
   const login = async () => {
-    // IMP START - Login
     const web3authProvider = await web3auth.connect();
-    // IMP END - Login
     setProvider(web3authProvider);
     if (web3auth.connected) {
       setLoggedIn(true);
@@ -103,9 +166,7 @@ function App() {
   };
 
   const logout = async () => {
-    // IMP START - Logout
     await web3auth.logout();
-    // IMP END - Logout
     setProvider(null);
     setLoggedIn(false);
   };
@@ -114,11 +175,6 @@ function App() {
     <>
       <div>Wallet address: {walletAddress}</div>
       <div className="flex-container">
-        {/* <div>
-          <button onClick={() => insert()} className="card">
-            DB insert
-          </button>
-        </div> */}
         <div>
           <button onClick={() => getUserGames()} className="card">
             Get games
@@ -130,8 +186,37 @@ function App() {
           </button>
         </div>
         <div>
+          <button onClick={getQuestion} className="card">
+            Ask Question
+          </button>
+        </div>
+        <div>
           <button onClick={logout} className="card">
             Log Out
+          </button>
+        </div>
+      </div>
+      <div>
+        <div className="question">
+          {isGaladrielLoading ? (
+            <span>Loading...</span>
+          ) : (
+            <span>{currentQuestion}</span>
+          )}
+        </div>
+        <div className="answer">
+          <div className="mb-3">
+            <label className="form-label">Answer: </label>
+            <input
+              type="text"
+              className="form-control"
+              value={answer}
+              onChange={(event) => setAnswer(event.target.value)}
+              disabled={isGaladrielLoading}
+            />
+          </div>
+          <button onClick={() => answerQuestion(answer)} className="card">
+            Answer
           </button>
         </div>
       </div>
@@ -146,7 +231,7 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Gandalf AI</h1>
+      <h1>Frodo AI</h1>
       <div className="grid">{loggedIn ? loggedInView : unloggedInView}</div>
       <div id="console" style={{ whiteSpace: "pre-line" }}>
         <p style={{ whiteSpace: "pre-line" }}></p>
