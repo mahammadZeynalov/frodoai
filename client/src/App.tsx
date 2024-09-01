@@ -10,15 +10,11 @@ import RPC from "./ethersRPC";
 import {
   CHAIN_CONFIG,
   CLIENT_ID,
-  DEFAULT_QUESTION_PROMPT,
-  GALADRIEL_CONTRACT_ADDRESS,
-  GALADRIEL_PRIVATE_KEY,
-  GALADRIEL_RPC_URL,
+  GALADRIEL_CONFIG,
   TABLE_NAME,
 } from "./consts";
 import { Contract, ethers, Wallet } from "ethers";
 import { GameStatus } from "./models";
-import GALADRIEL_ABI from "../../web3/ai/abis/OpenAiSimpleLLM.json";
 
 const privateKeyProvider = new EthereumPrivateKeyProvider({
   config: { chainConfig: CHAIN_CONFIG },
@@ -30,11 +26,11 @@ const web3auth = new Web3Auth({
   privateKeyProvider,
 });
 
-const provider = new ethers.JsonRpcProvider(GALADRIEL_RPC_URL);
-const wallet = new Wallet(GALADRIEL_PRIVATE_KEY, provider);
+const provider = new ethers.JsonRpcProvider(GALADRIEL_CONFIG.rpcUrl);
+const wallet = new Wallet(GALADRIEL_CONFIG.privateKey, provider);
 const contract = new Contract(
-  GALADRIEL_CONTRACT_ADDRESS,
-  GALADRIEL_ABI,
+  GALADRIEL_CONFIG.contractAddress,
+  GALADRIEL_CONFIG.abi,
   wallet
 );
 
@@ -113,14 +109,16 @@ function App() {
   };
 
   const getQuestion = async () => {
-    console.log("Init question: ", DEFAULT_QUESTION_PROMPT);
+    console.log("Init question: ", GALADRIEL_CONFIG.promptToAskQuestion);
     setIsGaladrielLoading(true);
     const transactionResponse = await contract.sendMessage(
-      DEFAULT_QUESTION_PROMPT
+      GALADRIEL_CONFIG.promptToAskQuestion
     );
     const receipt = await transactionResponse.wait();
     console.log(`Message sent, tx hash: ${receipt.hash}`);
-    console.log(`Chat started with message: "${DEFAULT_QUESTION_PROMPT}"`);
+    console.log(
+      `Chat started with message: "${GALADRIEL_CONFIG.promptToAskQuestion}"`
+    );
 
     // Read the LLM response on-chain
     while (true) {
