@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 
 // IMP START - Blockchain Calls
 import RPC from "./ethersRPC";
+import { initDbClient } from "./utils/tableland";
 // import RPC from "./viemRPC";
 // import RPC from "./web3RPC";
 // IMP END - Blockchain Calls
@@ -69,6 +70,12 @@ function App() {
 
     init();
   }, []);
+
+  useEffect(() => {
+    if (loggedIn) {
+      console.log("user has logged in");
+    }
+  }, [loggedIn]);
 
   const login = async () => {
     // IMP START - Login
@@ -170,6 +177,11 @@ function App() {
         <div>
           <button onClick={sendTransaction} className="card">
             Send Transaction
+          </button>
+        </div>
+        <div>
+          <button onClick={() => initDbClient(provider)} className="card">
+            DB insert
           </button>
         </div>
         <div>
