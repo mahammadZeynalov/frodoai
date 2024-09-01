@@ -19,7 +19,7 @@ contract Game is TablelandController, ERC721Holder {
         tableId = TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "id integer primary key, wallet_address text, mode text, question_number integer, status text",
+                "id integer primary key, wallet_address text, mode text, question_number integer, correct_answered integer, status text",
                 _TABLE_PREFIX
             )
         );
