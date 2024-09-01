@@ -21,7 +21,7 @@ export const CHAIN_CONFIG = {
 
 export const GALADRIEL_CONFIG = {
   rpcUrl: "https://devnet.galadriel.com/",
-  contractAddress: "0xFa8D709eb7f84adf099cBcE31b4bE04E72C031E0",
+  contractAddress: "0xA793bBDfDeb15Fd9dC8Ba88f0531A03C97c161f4",
   privateKey:
     "19d271c33253cbcc08c63025cc3fbefd6e9f0af875079518d5a4078187705049",
   promptToAskQuestion:
