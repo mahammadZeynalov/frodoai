@@ -1,4 +1,5 @@
 import { CHAIN_NAMESPACES, WEB3AUTH_NETWORK } from "@web3auth/base";
+import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 import { EthereumPrivateKeyProvider } from "@web3auth/ethereum-provider";
 import { Web3AuthOptions } from "@web3auth/modal";
 import { Web3AuthContextConfig } from "@web3auth/modal-react-hooks";
@@ -26,11 +27,15 @@ const privateKeyProvider = new EthereumPrivateKeyProvider({
 });
 
 const web3AuthOptions: Web3AuthOptions = {
+  chainConfig: CHAIN_CONFIG,
   clientId: CLIENT_ID,
   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
   privateKeyProvider,
 };
 
+const adapters = await getDefaultExternalAdapters({ options: web3AuthOptions });
+
 export const web3AuthContextConfig: Web3AuthContextConfig = {
   web3AuthOptions,
+  adapters: [...adapters],
 };
