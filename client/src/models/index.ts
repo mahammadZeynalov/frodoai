@@ -1,7 +1,6 @@
 export enum GameStatus {
   IN_PROGRESS = "IN_PROGRESS",
-  WIN = "WIN",
-  LOST = "LOST",
+  COMPLETED = "COMPLETED",
 }
 
 export enum AnswerType {
@@ -12,8 +11,9 @@ export enum AnswerType {
 export interface Game {
   id: number;
   wallet_address: string;
-  mode: string;
+  npc_name: string;
   question_number: number;
+  current_question_text: string;
   correct_answered: number;
   status: GameStatus;
 }
