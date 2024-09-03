@@ -70,12 +70,11 @@ function Playground() {
   const setQuestionInDb = async (npcName: string, questionText: string) => {
     const updateQuery = `
           UPDATE ${TABLE_NAME}
-          SET npc_name = '${npcName}'
+          SET npc_name = '${npcName}',
           current_question_text = '${questionText}'
           WHERE wallet_address='${walletAddress}';
     `;
-    const { meta: insert } = await dbClient!.prepare(updateQuery).run();
-    return insert.txn?.wait();
+    return dbClient!.prepare(updateQuery).run();
   };
 
   const getQuestion = async () => {
@@ -116,27 +115,31 @@ function Playground() {
   };
 
   const updateCounterInDb = async (isPreviousAnswerCorrect: boolean) => {
+    const fields: string[] = [];
     const updateQuestionNumber = "question_number = question_number + 1";
+    fields.push(updateQuestionNumber);
     const updateCorrectAnswered = isPreviousAnswerCorrect
       ? "correct_answered = correct_answered + 1"
       : "";
+    if (updateCorrectAnswered) {
+      fields.push(updateCorrectAnswered);
+    }
     const updateStatus =
       activeGame?.question_number === 3
         ? `status = '${GameStatus.COMPLETED}'`
         : "";
-    const fields = [
-      updateQuestionNumber,
-      updateCorrectAnswered,
-      updateStatus,
-    ].join(" ,");
+    if (updateStatus) {
+      fields.push(updateStatus);
+    }
+    const str = fields.join(", ");
+    console.log(fields);
     const updateQuery = `
           UPDATE ${TABLE_NAME}
-          SET ${fields}
+          SET ${str}
           WHERE wallet_address='${walletAddress}';
     `;
     console.log("query: ", updateQuery);
-    const { meta: insert } = await dbClient!.prepare(updateQuery).run();
-    return insert.txn?.wait();
+    return dbClient!.prepare(updateQuery).run();
   };
 
   const answerQuestion = async (answer: string) => {
