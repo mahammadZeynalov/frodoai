@@ -7,6 +7,7 @@ import { useWeb3Auth } from "@web3auth/modal-react-hooks";
 import { galadriel, GALADRIEL_CONFIG } from "./consts";
 
 interface Message {
+  id: number;
   role: string;
   content: string;
 }
@@ -14,81 +15,65 @@ interface Message {
 function Playground() {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [currentAnswer, setCurrentAnswer] = useState("");
-  const [isGameCreationLoading, setIsGameCreationLoading] = useState(false);
+  const [isChatLoading, setIsChatLoading] = useState(false);
+  const [isPostMessageLoading, setIsPostMessageLoading] = useState(false);
   const { initModal, provider, web3Auth, isConnected, connect, logout } =
     useWeb3Auth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [aiChatId, setAiChatId] = useState<number>();
 
-  const initGame = async (auto: boolean) => {
-    let chatId: any;
-    if (auto) {
-      chatId = localStorage.getItem("chatId");
-      if (chatId) {
-        chatId = Number(chatId);
-      } else {
-        chatId = createChat();
-      }
-      initChatLoop(chatId);
+  const initGame = async () => {
+    const chatId = localStorage.getItem("chatId");
+    if (chatId) {
+      setAiChatId(Number(chatId));
     } else {
-      chatId = createChat();
-      initChatLoop(chatId);
+      setAiChatId(await createChat());
     }
   };
 
   const createChat = async () => {
-    // Call the startChat function
-    setIsGameCreationLoading(true);
-    const transactionResponse = await galadriel.startChat(
-      GALADRIEL_CONFIG.promptToAskQuestion
-    );
-    const receipt = await transactionResponse.wait();
-    setIsGameCreationLoading(false);
-    console.log(`Message sent, tx hash: ${receipt.hash}`);
-    console.log(
-      `Chat started with message: "${GALADRIEL_CONFIG.promptToAskQuestion}"`
-    );
-
-    // Get the chat ID from transaction receipt logs
-    const chatId = getChatId(receipt, galadriel);
-
-    console.log(`Created chat ID: ${chatId}`);
-    if (!chatId && chatId !== 0) {
-      return;
-    }
-    localStorage.setItem("chatId", chatId.toString());
-    return chatId;
-  };
-
-  const initChatLoop = async (chatId: number) => {
-    const allMessages: Message[] = [];
-    // Run the chat loop: read messages and send messages
-    while (true) {
-      const newMessages: Message[] = await getNewMessages(
-        galadriel,
-        chatId,
-        allMessages.length
+    setIsChatLoading(true);
+    try {
+      const transactionResponse = await galadriel.startChat(
+        GALADRIEL_CONFIG.promptToAskQuestion
       );
-      if (newMessages) {
-        for (const message of newMessages) {
-          console.log(`${message.role}: ${message.content}`);
-          allMessages.push(message);
-          if (allMessages.at(-1)?.role === "assistant") {
-            const message = currentAnswer;
-            const transactionResponse = await galadriel.addMessage(
-              message,
-              chatId
-            );
-            const receipt = await transactionResponse.wait();
-            console.log(`Message sent, tx hash: ${receipt.hash}`);
-          }
-        }
+      const receipt = await transactionResponse.wait();
+
+      console.log(`Message sent, tx hash: ${receipt.hash}`);
+      console.log(
+        `Chat started with message: "${GALADRIEL_CONFIG.promptToAskQuestion}"`
+      );
+
+      // Get the chat ID from transaction receipt logs
+      const chatId = getChatId(receipt, galadriel);
+
+      console.log(`Created chat ID: ${chatId}`);
+      if (!chatId && chatId !== 0) {
+        return;
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      localStorage.setItem("chatId", chatId.toString());
+      return chatId;
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsChatLoading(false);
     }
   };
 
-  const getQuestion = async () => {};
+  const postMessage = async (message: string) => {
+    setIsPostMessageLoading(true);
 
-  const answerQuestion = async (answer: string) => {};
+    try {
+      const transactionResponse = await galadriel.addMessage(message, aiChatId);
+      const receipt = await transactionResponse.wait();
+      console.log(`Message sent, tx hash: ${receipt.hash}`);
+      const data = await getNewMessages(galadriel, aiChatId!);
+      setMessages(data);
+    } catch (e) {
+    } finally {
+      setIsPostMessageLoading(false);
+    }
+  };
 
   useEffect(() => {
     const init = async () => {
@@ -124,16 +109,76 @@ function Playground() {
 
   useEffect(() => {
     if (isConnected && walletAddress) {
-      initGame(true);
+      initGame();
     }
   }, [isConnected, walletAddress]);
+
+  useEffect(() => {
+    if (aiChatId) {
+      getMessages();
+    }
+  }, [aiChatId]);
+
+  const getMessages = async () => {
+    try {
+      setIsChatLoading(true);
+      const data = await getNewMessages(galadriel, aiChatId!);
+      setMessages(data);
+    } catch (e) {
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  console.log(isChatLoading);
 
   const loggedInView = (
     <>
       <div>Wallet address: {walletAddress}</div>
-      <div className="mt-3">
+      <h5 className="mt-3">
         Help Frodo to ask questions and burn ring in Morder!
-      </div>
+      </h5>
+      {isChatLoading ? (
+        <div className="spinner-border text-primary" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      ) : (
+        <div className="chat-container">
+          {messages.map((msg, index) => (
+            <div key={index}>
+              <span>{msg.role}</span>: <span>{msg.content}</span>
+            </div>
+          ))}
+          {true && (
+            <div className="chat-input">
+              <input
+                type="text"
+                value={currentAnswer}
+                onChange={(e) => setCurrentAnswer(e.target.value)}
+              />
+
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => postMessage(currentAnswer)}
+                disabled={isPostMessageLoading}
+              >
+                {isPostMessageLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    ></span>
+                    <span role="status">Loading...</span>
+                  </>
+                ) : (
+                  <>Answer</>
+                )}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 
@@ -185,19 +230,14 @@ function getChatId(receipt: TransactionReceipt, contract: Contract) {
 
 async function getNewMessages(
   contract: Contract,
-  chatId: number,
-  currentMessagesCount: number
+  chatId: number
 ): Promise<Message[]> {
   const messages = await contract.getMessageHistory(chatId);
-
-  const newMessages: Message[] = [];
-  messages.forEach((message: any, i: number) => {
-    if (i >= currentMessagesCount) {
-      newMessages.push({
-        role: message[0],
-        content: message.content[0].value,
-      });
-    }
+  return messages.map((message: any, index: number) => {
+    return {
+      id: index,
+      role: message[0],
+      content: message.content[0].value,
+    };
   });
-  return newMessages;
 }
