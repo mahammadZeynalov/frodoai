@@ -1,5 +1,5 @@
 import { Contract, ethers, TransactionReceipt, Wallet } from "ethers";
-import ABI from "./OpenAiChatGpt.json";
+import ABI from "./ChatGpt.json";
 import * as readline from "readline";
 
 require("dotenv").config();

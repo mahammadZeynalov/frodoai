@@ -1,4 +1,4 @@
-import GALADRIEL_ABI from "../../../web3/OpenAiChatGpt.json";
+import GALADRIEL_ABI from "../assets/ChatGpt.json";
 
 export const GALADRIEL_CONFIG = {
   rpcUrl: "https://devnet.galadriel.com/",
