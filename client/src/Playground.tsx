@@ -1,7 +1,5 @@
-/* eslint-disable @typescript-eslint/no-use-before-define */
-/* eslint-disable no-console */
 import "./App.css";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Contract, ethers, TransactionReceipt } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
 import { galadriel, GALADRIEL_CONFIG } from "./consts";
@@ -22,14 +20,15 @@ function Playground() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
 
-  const initGame = async () => {
+  const initializeGame = useCallback(async () => {
     const chatId = localStorage.getItem("chatId");
     if (chatId) {
       setAiChatId(Number(chatId));
     } else {
-      setAiChatId(await createChat());
+      const newChatId = await createChat();
+      setAiChatId(newChatId);
     }
-  };
+  }, []);
 
   const createChat = async () => {
     setIsChatLoading(true);
@@ -44,39 +43,52 @@ function Playground() {
         `Chat started with message: "${GALADRIEL_CONFIG.promptToAskQuestion}"`
       );
 
-      // Get the chat ID from transaction receipt logs
       const chatId = getChatId(receipt, galadriel);
-
-      console.log(`Created chat ID: ${chatId}`);
-      if (!chatId && chatId !== 0) {
-        return;
+      if (chatId !== undefined) {
+        localStorage.setItem("chatId", chatId.toString());
       }
-      localStorage.setItem("chatId", chatId.toString());
       return chatId;
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsChatLoading(false);
     }
   };
 
   const postMessage = async (message: string) => {
-    setIsPostMessageLoading(true);
+    if (!aiChatId) return;
 
+    setIsPostMessageLoading(true);
     try {
       const transactionResponse = await galadriel.addMessage(message, aiChatId);
       const receipt = await transactionResponse.wait();
+
       console.log(`Message sent, tx hash: ${receipt.hash}`);
-      const data = await getNewMessages(galadriel, aiChatId!);
-      setMessages(data);
-    } catch (e) {
+      const newMessages = await getNewMessages(galadriel, aiChatId);
+      setMessages(newMessages);
+    } catch (error) {
+      console.error(error);
     } finally {
       setIsPostMessageLoading(false);
     }
   };
 
+  const getMessages = useCallback(async () => {
+    if (!aiChatId) return;
+
+    setIsChatLoading(true);
+    try {
+      const newMessages = await getNewMessages(galadriel, aiChatId);
+      setMessages(newMessages);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsChatLoading(false);
+    }
+  }, [aiChatId]);
+
   useEffect(() => {
-    const init = async () => {
+    const initialize = async () => {
       try {
         if (web3Auth) {
           await initModal();
@@ -86,7 +98,7 @@ function Playground() {
       }
     };
 
-    init();
+    initialize();
   }, [initModal, web3Auth]);
 
   useEffect(() => {
@@ -97,19 +109,19 @@ function Playground() {
 
   useEffect(() => {
     if (isConnected && provider) {
-      const getAddress = async () => {
+      const fetchAddress = async () => {
         const ethersProvider = new ethers.BrowserProvider(provider);
         const signer = await ethersProvider.getSigner();
         const address = await signer.getAddress();
         setWalletAddress(address);
       };
-      getAddress();
+      fetchAddress();
     }
   }, [isConnected, provider]);
 
   useEffect(() => {
     if (isConnected && walletAddress) {
-      initGame();
+      initializeGame();
     }
   }, [isConnected, walletAddress]);
 
@@ -119,24 +131,11 @@ function Playground() {
     }
   }, [aiChatId]);
 
-  const getMessages = async () => {
-    try {
-      setIsChatLoading(true);
-      const data = await getNewMessages(galadriel, aiChatId!);
-      setMessages(data);
-    } catch (e) {
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
-
-  console.log(isChatLoading);
-
   const loggedInView = (
     <>
       <div>Wallet address: {walletAddress}</div>
       <h5 className="mt-3">
-        Help Frodo to ask questions and burn ring in Morder!
+        Help Frodo to ask questions and burn the ring in Mordor!
       </h5>
       {isChatLoading ? (
         <div className="spinner-border text-primary" role="status">
@@ -149,34 +148,31 @@ function Playground() {
               <span>{msg.role}</span>: <span>{msg.content}</span>
             </div>
           ))}
-          {true && (
-            <div className="chat-input">
-              <input
-                type="text"
-                value={currentAnswer}
-                onChange={(e) => setCurrentAnswer(e.target.value)}
-              />
-
-              <button
-                className="btn btn-primary"
-                type="button"
-                onClick={() => postMessage(currentAnswer)}
-                disabled={isPostMessageLoading}
-              >
-                {isPostMessageLoading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      aria-hidden="true"
-                    ></span>
-                    <span role="status">Loading...</span>
-                  </>
-                ) : (
-                  <>Answer</>
-                )}
-              </button>
-            </div>
-          )}
+          <div className="chat-input">
+            <input
+              type="text"
+              value={currentAnswer}
+              onChange={(e) => setCurrentAnswer(e.target.value)}
+            />
+            <button
+              className="btn btn-primary"
+              type="button"
+              onClick={() => postMessage(currentAnswer)}
+              disabled={isPostMessageLoading}
+            >
+              {isPostMessageLoading ? (
+                <>
+                  <span
+                    className="spinner-border spinner-border-sm"
+                    aria-hidden="true"
+                  ></span>
+                  <span role="status">Loading...</span>
+                </>
+              ) : (
+                <>Answer</>
+              )}
+            </button>
+          </div>
         </div>
       )}
     </>
@@ -233,11 +229,9 @@ async function getNewMessages(
   chatId: number
 ): Promise<Message[]> {
   const messages = await contract.getMessageHistory(chatId);
-  return messages.map((message: any, index: number) => {
-    return {
-      id: index,
-      role: message[0],
-      content: message.content[0].value,
-    };
-  });
+  return messages.map((message: any, index: number) => ({
+    id: index,
+    role: message[0],
+    content: message.content[0].value,
+  }));
 }
