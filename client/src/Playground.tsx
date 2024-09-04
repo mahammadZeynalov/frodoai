@@ -115,9 +115,13 @@ function Playground() {
   const getMessages = async (aiChatId: number) => {
     setIsChatLoading(true);
     try {
-      while (messages.length < 2) {
+      let ms = [];
+      while (ms.length < 2) {
+        console.log(ms.length);
         const newMessages = await getNewMessages(galadriel, aiChatId);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("newMessages: ", newMessages);
+        ms = [...newMessages];
         setMessages(newMessages);
       }
     } catch (error) {
