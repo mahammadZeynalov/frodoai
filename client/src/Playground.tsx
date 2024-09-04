@@ -6,6 +6,7 @@ import { GALADRIEL_CONFIG, galadrielChat } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
 import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
+import landingImage from "./assets/Frodo.webp";
 
 enum Role {
   assistant = "assistant",
@@ -278,7 +279,7 @@ function Playground() {
   const switchNetwork = async () => {
     const config: CustomChainConfig = {
       chainNamespace: CHAIN_NAMESPACES.EIP155,
-      chainId: "696969",
+      chainId: "0xaa289",
       tickerName: "Galadriel Devnet",
       ticker: "GAL",
       blockExplorerUrl: "https://explorer.galadriel.com",
@@ -459,11 +460,7 @@ function Playground() {
         of the Ring.
       </div>
       <div>
-        <img
-          className="frodo-img"
-          src="https://static1.srcdn.com/wordpress/wp-content/uploads/2023/03/frodo-smiling-at-the-end-of-return-of-the-king.jpg"
-          alt="frodo"
-        />
+        <img className="frodo-img" src={landingImage} alt="frodo" />
       </div>
       <div>
         <button
@@ -509,6 +506,12 @@ function Playground() {
             >
               Log Out
             </button>
+            {/* <button
+              onClick={() => switchNetwork()}
+              className="btn btn-outline-secondary"
+            >
+              Switch network
+            </button> */}
           </div>
         )}
       </header>
