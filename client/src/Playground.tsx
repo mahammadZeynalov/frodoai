@@ -183,7 +183,7 @@ function Playground() {
               );
             }
           })}
-          <div className="chat-input-wrapper">
+          <div className="chat-input-wrapper mt-3">
             <div style={{ width: "100%" }}>
               <input
                 type="text"
@@ -195,7 +195,13 @@ function Playground() {
               />
             </div>
 
-            <div>
+            <div
+              style={{
+                minWidth: "120px",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
               <button
                 className="btn btn-outline-secondary"
                 type="button"
