@@ -3,7 +3,7 @@ import { Contract, ethers, Wallet } from "ethers";
 
 export const GALADRIEL_CONFIG = {
   rpcUrl: "https://devnet.galadriel.com/",
-  contractAddress: "0x77dAC2431273c5200E243e044EAfBBcB6A21069D",
+  contractAddress: "0xE8775D4b4F016F0ED9Cc30B6fF604676371E8457",
   privateKey:
     "19d271c33253cbcc08c63025cc3fbefd6e9f0af875079518d5a4078187705049",
   abi: GALADRIEL_ABI,

@@ -17,6 +17,8 @@ interface Message {
   content: string;
 }
 
+const GAME_OVER_INDICATOR = "GAME IS OVER";
+
 function Playground() {
   const [walletAddress, setWalletAddress] = useState<string>("");
   const [currentAnswer, setCurrentAnswer] = useState("");
@@ -27,6 +29,7 @@ function Playground() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
   const [prompt, setPrompt] = useState<string>("");
+  const [isGameOver, setIsGameOver] = useState(false);
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -66,16 +69,22 @@ function Playground() {
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         const newMessages = await getNewMessages(galadriel, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        setCurrentAnswer("");
       }
     } catch (error) {
       console.error(error);
     } finally {
       setIsPostMessageLoading(false);
     }
+  };
+
+  const restart = () => {
+    localStorage.removeItem("chatId");
+    window.location.reload();
   };
 
   useEffect(() => {
@@ -151,9 +160,21 @@ function Playground() {
       });
   }, []);
 
+  useEffect(() => {
+    if (
+      messages.length &&
+      messages[messages.length - 1].content.includes(GAME_OVER_INDICATOR)
+    ) {
+      setIsGameOver(true);
+    }
+  }, [messages]);
+
   const loggedInView = (
     <>
-      <div className="mt-4">Wallet address: {walletAddress}</div>
+      <div className="mt-4">
+        <div>Wallet address: {walletAddress}</div>
+      </div>
+
       {isChatLoading ? (
         <div className="loading-indicator">
           <div className="spinner-border text-primary mt-4" role="status">
@@ -183,45 +204,57 @@ function Playground() {
               );
             }
           })}
-          <div className="chat-input-wrapper mt-3">
-            <div style={{ width: "100%" }}>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Write your answer here..."
-                value={currentAnswer}
-                onChange={(e) => setCurrentAnswer(e.target.value)}
-                disabled={isPostMessageLoading}
-              />
-            </div>
+          {!isGameOver ? (
+            <div className="chat-input-wrapper mt-3">
+              <div style={{ width: "100%" }}>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Write your answer here..."
+                  value={currentAnswer}
+                  onChange={(e) => setCurrentAnswer(e.target.value)}
+                  disabled={isPostMessageLoading}
+                />
+              </div>
 
-            <div
-              style={{
-                minWidth: "120px",
-                display: "flex",
-                justifyContent: "flex-end",
-              }}
-            >
-              <button
-                className="btn btn-outline-secondary"
-                type="button"
-                onClick={() => postMessage(currentAnswer)}
-                disabled={isPostMessageLoading}
+              <div
+                style={{
+                  minWidth: "120px",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
               >
-                {isPostMessageLoading ? (
-                  <>
-                    <span
-                      className="spinner-border spinner-border-sm"
-                      aria-hidden="true"
-                    ></span>
-                    <span role="status"> Loading...</span>
-                  </>
-                ) : (
-                  <>Answer</>
-                )}
+                <button
+                  className="btn btn-outline-secondary"
+                  type="button"
+                  onClick={() => postMessage(currentAnswer)}
+                  disabled={isPostMessageLoading}
+                >
+                  {isPostMessageLoading ? (
+                    <>
+                      <span
+                        className="spinner-border spinner-border-sm"
+                        aria-hidden="true"
+                      ></span>
+                      <span role="status"> Loading...</span>
+                    </>
+                  ) : (
+                    <>Answer</>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button
+                className="btn btn-outline-secondary mt-3"
+                type="button"
+                onClick={restart}
+              >
+                Start new game
               </button>
             </div>
-          </div>
+          )}
         </div>
       )}
     </>
@@ -253,7 +286,10 @@ function Playground() {
       <header className="header">
         <h1>Frodo AI</h1>
         {isConnected && (
-          <div>
+          <div style={{ display: "flex", gap: "20px" }}>
+            <button onClick={restart} className="btn btn-outline-secondary">
+              Restart
+            </button>
             <button
               onClick={() => logout()}
               className="btn btn-outline-secondary"

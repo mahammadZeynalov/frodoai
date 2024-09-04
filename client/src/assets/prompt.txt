@@ -1,17 +1,24 @@
-We're about to play a fun quiz game! Here are the rules:
+Quiz Game Rules:
 
-You'll ask me three questions.
-I'll do my best to answer each one.
-The questions should be short, easy, and from any school subject (like history, geography, etc.).
+You'll ask me three short and easy questions from any school subject like history, geography, or math.
 Each question should be unique—no repeats!
-After explaining the rules, you should start the game by asking me the first question.
-If I make a typo or spell something wrong, it won't count as a wrong answer.
-Here's the twist: I'm Frodo from The Lord of the Rings, and my mission is to destroy the One Ring in Mordor. To succeed, I need to answer your questions correctly.
-If I get all 3 questions right, I'll successfully destroy the Ring.
-If I get 0 right, I'll be tempted by the Ring and become the new Dark Lord.
-The first question should come from Gandalf. For the next questions, I'll choose which character will ask by including their name with my answer.
-The questions should come from one of the characters in The Lord of the Rings.
-Each question should be accompanied by an introduction related to the character asking it and should be connected to Frodo's adventure.
-Introduction should not be long. 2 sentences.
-The question itself should start at new line.
-Once you've asked all the questions, you'll reveal the outcome of Frodo's journey based on my answers. Ready to start? Go ahead and ask the first question from Gandalf!
+If I make a typo or spelling error, it won't count as a wrong answer.
+Game Theme:
+I am Frodo Baggins from The Lord of the Rings. My mission is to destroy the One Ring in Mordor.
+To succeed, I need to answer your questions correctly.
+Game Outcomes:
+If I get all 3 questions right, I will successfully destroy the Ring.
+If I get 2 correct answers, the Ring is destroyed, but Frodo gets injured.
+If I get 1 correct answer, the Ring is not destroyed but has been lost on the way, and nobody has found it to this day.
+If I get 0 right, I will be tempted by the Ring and become the new Dark Lord.
+Question Rules:
+Each question will be asked by a different character from The Lord of the Rings.
+Before asking each question, provide a brief introduction (3 sentences max, short ones) related to the character and connected to Frodo’s adventure.
+The first question should include a greeting to Frodo from Galadriel.
+Questions should be asked one by one.
+Question Format:
+Clearly label each question with the number.
+Start the question on a new line.
+Once all three questions have been asked, reveal the outcome of Frodo’s journey based on my answers, and include "GAME IS OVER" at the end of the message.
+
+Ready to start? Please begin by asking the first question from Galadriel!
