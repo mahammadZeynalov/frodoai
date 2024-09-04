@@ -187,32 +187,37 @@ function Playground() {
             }
           })}
           <div className="chat-input-wrapper">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Write your answer here..."
-              value={currentAnswer}
-              onChange={(e) => setCurrentAnswer(e.target.value)}
-              disabled={isPostMessageLoading}
-            />
-            <button
-              className="btn btn-primary"
-              type="button"
-              onClick={() => postMessage(currentAnswer)}
-              disabled={isPostMessageLoading}
-            >
-              {isPostMessageLoading ? (
-                <>
-                  <span
-                    className="spinner-border spinner-border-sm"
-                    aria-hidden="true"
-                  ></span>
-                  <span role="status">Loading...</span>
-                </>
-              ) : (
-                <>Answer</>
-              )}
-            </button>
+            <div style={{ width: "100%" }}>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Write your answer here..."
+                value={currentAnswer}
+                onChange={(e) => setCurrentAnswer(e.target.value)}
+                disabled={isPostMessageLoading}
+              />
+            </div>
+
+            <div>
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={() => postMessage(currentAnswer)}
+                disabled={isPostMessageLoading}
+              >
+                {isPostMessageLoading ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm"
+                      aria-hidden="true"
+                    ></span>
+                    <span role="status"> Loading...</span>
+                  </>
+                ) : (
+                  <>Answer</>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -220,9 +225,24 @@ function Playground() {
   );
 
   const unloggedInView = (
-    <button onClick={connect} className="card">
-      Login
-    </button>
+    <div className="login-view">
+      <div>
+        Help Frodo on his adventure by answering questions that decide the fate
+        of the Ring.
+      </div>
+      <div>
+        <img
+          className="frodo-img"
+          src="https://static1.srcdn.com/wordpress/wp-content/uploads/2023/03/frodo-smiling-at-the-end-of-return-of-the-king.jpg"
+          alt="frodo"
+        />
+      </div>
+      <div>
+        <button className="btn btn-outline-secondary" onClick={connect}>
+          Start journey
+        </button>
+      </div>
+    </div>
   );
 
   return (

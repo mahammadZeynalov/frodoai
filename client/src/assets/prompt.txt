@@ -12,6 +12,6 @@ If I get 0 right, I'll be tempted by the Ring and become the new Dark Lord.
 The first question should come from Gandalf. For the next questions, I'll choose which character will ask by including their name with my answer.
 The questions should come from one of the characters in The Lord of the Rings.
 Each question should be accompanied by an introduction related to the character asking it and should be connected to Frodo's adventure.
-Introduction should not be long. 3 sentences.
+Introduction should not be long. 2 sentences.
 The question itself should start at new line.
 Once you've asked all the questions, you'll reveal the outcome of Frodo's journey based on my answers. Ready to start? Go ahead and ask the first question from Gandalf!

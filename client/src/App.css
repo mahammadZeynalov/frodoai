@@ -30,4 +30,19 @@
 .chat-input-wrapper {
   display: flex;
   gap: 40px;
+  align-items: center;
+}
+
+.login-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 200px;
+}
+
+.frodo-img {
+  width: 400x;
+  height: 200px;
 }
