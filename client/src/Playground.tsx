@@ -312,99 +312,121 @@ function Playground() {
         <div>Wallet address: {walletAddress}</div>
       </div>
 
-      {isChatLoading ? (
-        <div className="loading-indicator">
-          <div className="spinner-border text-primary mt-4" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-          <div className="loading-text">Loading the game...</div>
-        </div>
-      ) : (
-        <div className="mt-4 chat">
-          {messages.map((msg, index) => {
-            // we only need to mimic the typing effect for the last message
-            if (index === messages.length - 1 && msg.role === Role.assistant) {
-              return (
-                <div key={msg.id} className="typing-effect mb-2">
-                  <span style={{ fontWeight: "bold" }}>{"Galadriel: "}</span>
-                  <TypingEffect text={msg.content} speed={50} />
-                </div>
-              );
-            } else {
-              return (
-                <div key={msg.id} className="typing-effect mb-2">
-                  <span style={{ fontWeight: "bold" }}>
-                    {msg.role === Role.assistant ? "Galadriel" : "Frodo"}:{" "}
-                  </span>
-                  <span>{msg.content}</span>
-                </div>
-              );
-            }
-          })}
-          {!isGameOver ? (
-            <div className="chat-input-wrapper mt-3">
-              <div style={{ width: "100%" }}>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Write your answer here..."
-                  value={currentAnswer}
-                  onChange={(e) => setCurrentAnswer(e.target.value)}
-                  disabled={isPostMessageLoading}
-                />
+      {pageMode === PageMode.game && (
+        <>
+          {isChatLoading ? (
+            <div className="loading-indicator">
+              <div className="spinner-border text-primary mt-4" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
-
-              <div
-                style={{
-                  minWidth: "120px",
-                  display: "flex",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <button
-                  className="btn btn-outline-secondary"
-                  type="button"
-                  onClick={() => postMessage(currentAnswer)}
-                  disabled={isPostMessageLoading}
-                >
-                  {isPostMessageLoading ? (
-                    <>
-                      <span
-                        className="spinner-border spinner-border-sm"
-                        aria-hidden="true"
-                      ></span>
-                      <span role="status"> Loading...</span>
-                    </>
-                  ) : (
-                    <>Answer</>
-                  )}
-                </button>
-              </div>
+              <div className="loading-text">Loading the game...</div>
             </div>
           ) : (
-            <div>
-              <button
-                className="btn btn-outline-secondary mt-3"
-                type="button"
-                onClick={() => {
-                  const message = messages[messages.length - 1].content
-                    .split("\n")
-                    .join(" ");
+            <div className="mt-4 chat">
+              {messages.map((msg, index) => {
+                // we only need to mimic the typing effect for the last message
+                if (
+                  index === messages.length - 1 &&
+                  msg.role === Role.assistant
+                ) {
+                  return (
+                    <div key={msg.id} className="typing-effect mb-2">
+                      <span style={{ fontWeight: "bold" }}>
+                        {"Galadriel: "}
+                      </span>
+                      <TypingEffect text={msg.content} speed={50} />
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div key={msg.id} className="typing-effect mb-2">
+                      <span style={{ fontWeight: "bold" }}>
+                        {msg.role === Role.assistant ? "Galadriel" : "Frodo"}:{" "}
+                      </span>
+                      <span>{msg.content}</span>
+                    </div>
+                  );
+                }
+              })}
+              {!isGameOver ? (
+                <div className="chat-input-wrapper mt-3">
+                  <div style={{ width: "100%" }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Write your answer here..."
+                      value={currentAnswer}
+                      onChange={(e) => setCurrentAnswer(e.target.value)}
+                      disabled={isPostMessageLoading}
+                    />
+                  </div>
 
-                  onMint(message);
-                }}
-              >
-                Mint NFT
-              </button>
-              <button
-                className="btn btn-outline-secondary mt-3"
-                type="button"
-                onClick={switchNetwork}
-              >
-                Switch chain
-              </button>
+                  <div
+                    style={{
+                      minWidth: "120px",
+                      display: "flex",
+                      justifyContent: "flex-end",
+                    }}
+                  >
+                    <button
+                      className="btn btn-outline-secondary"
+                      type="button"
+                      onClick={() => postMessage(currentAnswer)}
+                      disabled={isPostMessageLoading}
+                    >
+                      {isPostMessageLoading ? (
+                        <>
+                          <span
+                            className="spinner-border spinner-border-sm"
+                            aria-hidden="true"
+                          ></span>
+                          <span role="status"> Loading...</span>
+                        </>
+                      ) : (
+                        <>Answer</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    className="btn btn-outline-secondary mt-3"
+                    type="button"
+                    onClick={() => {
+                      const message = messages[messages.length - 1].content
+                        .split("\n")
+                        .join(" ");
+
+                      onMint(message);
+                    }}
+                  >
+                    Mint NFT
+                  </button>
+                  <button
+                    className="btn btn-outline-secondary mt-3"
+                    type="button"
+                    onClick={switchNetwork}
+                  >
+                    Switch chain
+                  </button>
+                </div>
+              )}
             </div>
           )}
+        </>
+      )}
+
+      {pageMode === PageMode.gallery && (
+        <div style={{ display: "flex", gap: "20px" }} className="mt-4">
+          {nfts.map((i) => (
+            <img
+              src={i.tokenUri}
+              className="img-thumbnail"
+              style={{ width: "200px" }}
+              alt={i.txHash}
+            ></img>
+          ))}
         </div>
       )}
     </>
