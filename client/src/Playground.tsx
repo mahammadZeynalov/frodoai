@@ -1,14 +1,20 @@
 import "./App.css";
 import { useEffect, useState } from "react";
-import { Contract, ethers, TransactionReceipt } from "ethers";
+import { BrowserProvider, Contract, ethers, TransactionReceipt } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
-import { galadriel } from "./consts";
+import { GALADRIEL_CONFIG, galadrielChat } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
+import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
 
 enum Role {
   assistant = "assistant",
   user = "user",
+}
+
+enum PageMode {
+  game = "game",
+  gallery = "gallery",
 }
 
 interface Message {
@@ -18,6 +24,8 @@ interface Message {
 }
 
 const GAME_OVER_INDICATOR = "GAME IS OVER";
+const HTML_REGULAR =
+  /<(?!img|table|\/table|thead|\/thead|tbody|\/tbody|tr|\/tr|td|\/td|th|\/th|br|\/br).*?>/gi;
 
 function Playground() {
   const [walletAddress, setWalletAddress] = useState<string>("");
@@ -32,11 +40,13 @@ function Playground() {
     connect,
     logout,
     status,
+    addAndSwitchChain,
   } = useWeb3Auth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
   const [prompt, setPrompt] = useState<string>("");
   const [isGameOver, setIsGameOver] = useState(false);
+  const [pageMode, setPageMode] = useState(PageMode.game);
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -50,12 +60,12 @@ function Playground() {
   const createChat = async () => {
     setIsChatLoading(true);
     try {
-      const transactionResponse = await galadriel.startChat(prompt);
+      const transactionResponse = await galadrielChat.startChat(prompt);
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       console.log(`Chat started with message: "${prompt}"`);
 
-      const chatId = getChatId(receipt, galadriel);
+      const chatId = getChatId(receipt, galadrielChat);
       if (chatId !== undefined) {
         localStorage.setItem("chatId", chatId.toString());
       }
@@ -71,13 +81,16 @@ function Playground() {
     if (!aiChatId) return;
     setIsPostMessageLoading(true);
     try {
-      const transactionResponse = await galadriel.addMessage(message, aiChatId);
+      const transactionResponse = await galadrielChat.addMessage(
+        message,
+        aiChatId
+      );
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        const newMessages = await getNewMessages(galadriel, aiChatId);
+        const newMessages = await getNewMessages(galadrielChat, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
         setCurrentAnswer("");
@@ -92,6 +105,82 @@ function Playground() {
   const restart = () => {
     localStorage.removeItem("chatId");
     window.location.reload();
+  };
+
+  const onMint = async (val: string) => {
+    const input = (val.replace(HTML_REGULAR, "") || "").replace(
+      /(<br\s*\/?>\s*)+$/,
+      ""
+    );
+    console.log(provider);
+    console.log(input);
+    if (!provider || !input) return;
+
+    // setIsLoading(true)
+    try {
+      const ethersProvider = new BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+      const contract = new Contract(
+        GALADRIEL_CONFIG.nftMinterContractAddress,
+        GALADRIEL_CONFIG.nftMinterAbi,
+        signer
+      );
+      console.log("initializeMint started");
+      const tx = await contract.initializeMint(input);
+      const receipt = await tx.wait();
+      console.log("initializeMint ended: ", receipt);
+      // setMessage("");
+      const tokenId = getNftId(receipt, contract);
+      console.log("tokenId: ", tokenId);
+      if (tokenId !== undefined) {
+        // setIsMintingLoading(true);
+        const tokenUri = await pollTokenUri(contract, tokenId);
+        console.log("tokenUri: ", tokenUri);
+        if (tokenUri) {
+          // userNfts.current = [
+          //   { tokenUri, txHash: receipt.hash },
+          //   ...userNfts.current,
+          // ];
+          // setUserNftsCount(userNfts.current.length);
+        }
+      }
+    } catch {}
+    // setIsLoading(false);
+    // setIsMintingLoading(false);
+  };
+
+  const getNftId = (
+    receipt: TransactionReceipt,
+    contract: Contract
+  ): number | undefined => {
+    let nftId;
+    for (const log of receipt.logs) {
+      try {
+        const parsedLog = contract.interface.parseLog(log);
+        if (parsedLog && parsedLog.name === "MintInputCreated") {
+          // Second event argument
+          nftId = ethers.toNumber(parsedLog.args[1]);
+        }
+      } catch (error) {
+        // This log might not have been from your contract, or it might be an anonymous log
+        console.log("Could not parse log:", log);
+      }
+    }
+    return nftId;
+  };
+
+  const pollTokenUri = async (
+    contract: Contract,
+    tokenId: number
+  ): Promise<string | undefined> => {
+    // max amount of time to wait
+    for (let i = 0; i < 120; i++) {
+      try {
+        const uri = await contract.tokenURI(tokenId);
+        if (uri) return uri;
+      } catch (e) {}
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    }
   };
 
   useEffect(() => {
@@ -143,7 +232,7 @@ function Playground() {
     try {
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
-        const newMessages = await getNewMessages(galadriel, aiChatId);
+        const newMessages = await getNewMessages(galadrielChat, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -175,6 +264,20 @@ function Playground() {
       setIsGameOver(true);
     }
   }, [messages]);
+
+  const switchNetwork = async () => {
+    const config: CustomChainConfig = {
+      chainNamespace: CHAIN_NAMESPACES.EIP155,
+      chainId: "696969",
+      tickerName: "Galadriel Devnet",
+      ticker: "GAL",
+      blockExplorerUrl: "https://explorer.galadriel.com",
+      rpcTarget: "https://devnet.galadriel.com/",
+    };
+    console.log("switch chain started");
+    const newChain = await addAndSwitchChain(config);
+    console.log("newChain: ", newChain);
+  };
 
   const loggedInView = (
     <>
@@ -256,9 +359,22 @@ function Playground() {
               <button
                 className="btn btn-outline-secondary mt-3"
                 type="button"
-                onClick={restart}
+                onClick={() => {
+                  const message = messages[messages.length - 1].content
+                    .split("\n")
+                    .join(" ");
+
+                  onMint(message);
+                }}
               >
-                Start new game
+                Mint NFT
+              </button>
+              <button
+                className="btn btn-outline-secondary mt-3"
+                type="button"
+                onClick={switchNetwork}
+              >
+                Switch chain
               </button>
             </div>
           )}
@@ -298,9 +414,26 @@ function Playground() {
         <h1>Frodo AI</h1>
         {isConnected && (
           <div style={{ display: "flex", gap: "20px" }}>
-            <button onClick={restart} className="btn btn-outline-secondary">
-              Restart
-            </button>
+            {pageMode === PageMode.game ? (
+              <button
+                onClick={() => setPageMode(PageMode.gallery)}
+                className="btn btn-outline-secondary"
+              >
+                Switch to Gallery
+              </button>
+            ) : (
+              <>
+                <button onClick={restart} className="btn btn-outline-secondary">
+                  Restart
+                </button>
+                <button
+                  onClick={() => setPageMode(PageMode.game)}
+                  className="btn btn-outline-secondary"
+                >
+                  Switch to Game
+                </button>
+              </>
+            )}
             <button
               onClick={() => logout()}
               className="btn btn-outline-secondary"
