@@ -5,8 +5,8 @@ import { useWeb3Auth } from "@web3auth/modal-react-hooks";
 import { GALADRIEL_CONFIG, galadrielChat } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
-import { CHAIN_NAMESPACES, CustomChainConfig } from "@web3auth/base";
-import landingImage from "./assets/Frodo.webp";
+import landingImage from "./assets/frodo_ai.png";
+import { ulid } from "ulid";
 
 enum Role {
   assistant = "assistant",
@@ -19,7 +19,7 @@ enum PageMode {
 }
 
 interface Message {
-  id: number;
+  id: string;
   role: Role;
   content: string;
 }
@@ -90,12 +90,17 @@ function Playground() {
     setIsPostMessageLoading(true);
     try {
       console.log("addMessage started");
+      setMessages((prev) => [
+        ...prev,
+        { role: Role.user, content: message, id: ulid() },
+      ]);
       const transactionResponse = await galadrielChat.addMessage(
         message,
         aiChatId
       );
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
+
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -345,7 +350,7 @@ function Playground() {
               })}
               {!isGameOver ? (
                 <div className="chat-input-wrapper mt-3">
-                  <div style={{ width: "80%" }}>
+                  <div style={{ width: "100%" }}>
                     <input
                       type="text"
                       className="form-control"
@@ -368,17 +373,7 @@ function Playground() {
                       onClick={() => postMessage(currentAnswer)}
                       disabled={isPostMessageLoading}
                     >
-                      {isPostMessageLoading ? (
-                        <>
-                          <span
-                            className="spinner-border spinner-border-sm"
-                            aria-hidden="true"
-                          ></span>
-                          <span role="status"> Loading...</span>
-                        </>
-                      ) : (
-                        <>Answer</>
-                      )}
+                      Answer
                     </button>
                   </div>
                 </div>
@@ -411,7 +406,10 @@ function Playground() {
       )}
 
       {pageMode === PageMode.gallery && (
-        <div style={{ display: "flex", gap: "20px" }} className="mt-4">
+        <div
+          style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}
+          className="mt-4"
+        >
           {nfts.map((i) => (
             <div key={i.tokenUri}>
               <img
@@ -533,10 +531,10 @@ async function getNewMessages(
 ): Promise<Message[]> {
   const messages: Message[] = await contract.getMessageHistory(chatId);
   return messages
-    .map((message: any, index: number) => ({
-      id: index,
+    .map((message: any) => ({
+      id: ulid(),
       role: message[0],
-      content: message.content[0].value,
+      content: message.content[0].value.trim(),
     }))
-    .filter((i) => i.id !== 0);
+    .filter((i, index) => index !== 0);
 }
