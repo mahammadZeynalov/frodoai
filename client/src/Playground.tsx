@@ -501,7 +501,10 @@ function Playground() {
               </button>
             )}
             <button
-              onClick={() => logout()}
+              onClick={() => {
+                localStorage.removeItem("chanId");
+                logout();
+              }}
               className="btn btn-outline-secondary"
             >
               Log Out
