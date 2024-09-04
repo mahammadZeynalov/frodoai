@@ -484,24 +484,24 @@ function Playground() {
         {isConnected && (
           <div style={{ display: "flex", gap: "20px" }}>
             {pageMode === PageMode.game ? (
-              <button
-                onClick={() => setPageMode(PageMode.gallery)}
-                className="btn btn-outline-secondary"
-              >
-                Switch to Gallery
-              </button>
-            ) : (
               <>
                 <button onClick={restart} className="btn btn-outline-secondary">
                   Restart
                 </button>
                 <button
-                  onClick={() => setPageMode(PageMode.game)}
+                  onClick={() => setPageMode(PageMode.gallery)}
                   className="btn btn-outline-secondary"
                 >
-                  Switch to Game
+                  Switch to Gallery
                 </button>
               </>
+            ) : (
+              <button
+                onClick={() => setPageMode(PageMode.game)}
+                className="btn btn-outline-secondary"
+              >
+                Switch to Game
+              </button>
             )}
             <button
               onClick={() => logout()}
