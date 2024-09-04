@@ -183,7 +183,7 @@ function Playground() {
           <div className="loading-text">Loading the game...</div>
         </div>
       ) : (
-        <div className="mt-4">
+        <div className="mt-4 chat">
           {messages.map((msg, index) => {
             // we only need to mimic the typing effect for the last message
             if (index === messages.length - 1 && msg.role === Role.assistant) {
