@@ -1,8 +1,9 @@
 import "./App.css";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Contract, ethers, TransactionReceipt } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
-import { galadriel, GALADRIEL_CONFIG } from "./consts";
+import { galadriel } from "./consts";
+import promptFile from "./assets/prompt.txt";
 
 interface Message {
   id: number;
@@ -19,29 +20,24 @@ function Playground() {
     useWeb3Auth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
+  const [prompt, setPrompt] = useState<string>("");
 
-  const initializeGame = useCallback(async () => {
+  const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
     if (chatId) {
       setAiChatId(Number(chatId));
     } else {
-      const newChatId = await createChat();
-      setAiChatId(newChatId);
+      createChat().then((newChatId) => setAiChatId(newChatId));
     }
-  }, []);
+  };
 
   const createChat = async () => {
     setIsChatLoading(true);
     try {
-      const transactionResponse = await galadriel.startChat(
-        GALADRIEL_CONFIG.promptToAskQuestion
-      );
+      const transactionResponse = await galadriel.startChat(prompt);
       const receipt = await transactionResponse.wait();
-
       console.log(`Message sent, tx hash: ${receipt.hash}`);
-      console.log(
-        `Chat started with message: "${GALADRIEL_CONFIG.promptToAskQuestion}"`
-      );
+      console.log(`Chat started with message: "${prompt}"`);
 
       const chatId = getChatId(receipt, galadriel);
       if (chatId !== undefined) {
@@ -57,14 +53,13 @@ function Playground() {
 
   const postMessage = async (message: string) => {
     if (!aiChatId) return;
-
     setIsPostMessageLoading(true);
     try {
       const transactionResponse = await galadriel.addMessage(message, aiChatId);
       const receipt = await transactionResponse.wait();
-
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       const newMessages = await getNewMessages(galadriel, aiChatId);
+      console.log("newMessages: ", newMessages);
       setMessages(newMessages);
     } catch (error) {
       console.error(error);
@@ -72,20 +67,6 @@ function Playground() {
       setIsPostMessageLoading(false);
     }
   };
-
-  const getMessages = useCallback(async () => {
-    if (!aiChatId) return;
-
-    setIsChatLoading(true);
-    try {
-      const newMessages = await getNewMessages(galadriel, aiChatId);
-      setMessages(newMessages);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsChatLoading(false);
-    }
-  }, [aiChatId]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -120,16 +101,43 @@ function Playground() {
   }, [isConnected, provider]);
 
   useEffect(() => {
-    if (isConnected && walletAddress) {
+    if (isConnected && walletAddress && prompt) {
       initializeGame();
     }
-  }, [isConnected, walletAddress]);
+  }, [isConnected, walletAddress, prompt]);
 
   useEffect(() => {
     if (aiChatId) {
-      getMessages();
+      getMessages(aiChatId);
     }
   }, [aiChatId]);
+
+  const getMessages = async (aiChatId: number) => {
+    setIsChatLoading(true);
+    try {
+      while (messages.length < 2) {
+        const newMessages = await getNewMessages(galadriel, aiChatId);
+        console.log("newMessages: ", newMessages);
+        setMessages(newMessages);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsChatLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Fetching the text file content
+    fetch(promptFile)
+      .then((response) => response.text())
+      .then((prompt) => {
+        setPrompt(prompt);
+      })
+      .catch((error) => {
+        console.error("Error fetching the text file:", error);
+      });
+  }, []);
 
   const loggedInView = (
     <>
