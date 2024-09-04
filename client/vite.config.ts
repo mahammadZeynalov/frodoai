@@ -6,9 +6,6 @@ import { defineConfig } from "vite";
 // IMP START - Bundler Issues
 export default defineConfig({
   plugins: [react()],
-  build: {
-    target: "ES2022",
-  },
   resolve: {
     alias: {
       crypto: "empty-module",

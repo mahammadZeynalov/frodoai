@@ -26,16 +26,13 @@ const privateKeyProvider = new EthereumPrivateKeyProvider({
   config: { chainConfig: CHAIN_CONFIG },
 });
 
-const web3AuthOptions: Web3AuthOptions = {
+export const web3AuthOptions: Web3AuthOptions = {
   chainConfig: CHAIN_CONFIG,
   clientId: CLIENT_ID,
   web3AuthNetwork: WEB3AUTH_NETWORK.SAPPHIRE_DEVNET,
   privateKeyProvider,
 };
 
-const adapters = await getDefaultExternalAdapters({ options: web3AuthOptions });
-
 export const web3AuthContextConfig: Web3AuthContextConfig = {
   web3AuthOptions,
-  adapters: [...adapters],
 };
