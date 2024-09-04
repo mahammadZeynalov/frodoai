@@ -61,7 +61,7 @@ function Playground() {
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       const newMessages = await getNewMessages(galadriel, aiChatId);
       console.log("newMessages: ", newMessages);
-      setMessages(newMessages);
+      setMessages(newMessages.filter((message) => message.id !== 0));
     } catch (error) {
       console.error(error);
     } finally {
@@ -122,7 +122,7 @@ function Playground() {
         await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("newMessages: ", newMessages);
         ms = [...newMessages];
-        setMessages(newMessages);
+        setMessages(newMessages.filter((message) => message.id !== 0));
       }
     } catch (error) {
       console.error(error);
@@ -147,25 +147,41 @@ function Playground() {
   const loggedInView = (
     <>
       <div>Wallet address: {walletAddress}</div>
-      <h5 className="mt-3">
+      <h5 className="mt-4">
         Help Frodo to ask questions and burn the ring in Mordor!
       </h5>
       {isChatLoading ? (
-        <div className="spinner-border text-primary" role="status">
-          <span className="visually-hidden">Loading...</span>
+        <div className="loading-indicator">
+          <div className="spinner-border text-primary mt-4" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+          <div className="loading-text">Loading the game...</div>
         </div>
       ) : (
-        <div className="chat-container">
-          {messages
-            .filter((message, index) => message.id !== 0)
-            .map((msg, index) => (
-              <div key={index}>
-                <span>{msg.role}</span>: <span>{msg.content}</span>
-              </div>
-            ))}
+        <div className="mt-4">
+          {messages.map((msg, index) => {
+            // we only need to mimic the typing effect for the last message
+            if (index === messages.length - 1) {
+              return (
+                <div key={msg.id} className="typing-effect">
+                  <span>{msg.role}: </span>
+                  <TypingEffect text={msg.content} speed={50} />
+                </div>
+              );
+            } else {
+              return (
+                <div key={msg.id} className="typing-effect">
+                  <span>{msg.role}: </span>
+                  <span>{msg.content}</span>
+                </div>
+              );
+            }
+          })}
           <div className="chat-input">
             <input
               type="text"
+              className="form-control"
+              placeholder="Write your answer here..."
               value={currentAnswer}
               onChange={(e) => setCurrentAnswer(e.target.value)}
             />
