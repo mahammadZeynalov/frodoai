@@ -23,6 +23,11 @@ interface Message {
   content: string;
 }
 
+export interface Nft {
+  tokenUri: string;
+  txHash?: string;
+}
+
 const GAME_OVER_INDICATOR = "GAME IS OVER";
 const HTML_REGULAR =
   /<(?!img|table|\/table|thead|\/thead|tbody|\/tbody|tr|\/tr|td|\/td|th|\/th|br|\/br).*?>/gi;
@@ -47,6 +52,7 @@ function Playground() {
   const [prompt, setPrompt] = useState<string>("");
   const [isGameOver, setIsGameOver] = useState(false);
   const [pageMode, setPageMode] = useState(PageMode.game);
+  const [nfts, setNfts] = useState<Nft[]>([]);
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -112,8 +118,6 @@ function Playground() {
       /(<br\s*\/?>\s*)+$/,
       ""
     );
-    console.log(provider);
-    console.log(input);
     if (!provider || !input) return;
 
     // setIsLoading(true)
@@ -131,22 +135,21 @@ function Playground() {
       console.log("initializeMint ended: ", receipt);
       // setMessage("");
       const tokenId = getNftId(receipt, contract);
-      console.log("tokenId: ", tokenId);
       if (tokenId !== undefined) {
-        // setIsMintingLoading(true);
         const tokenUri = await pollTokenUri(contract, tokenId);
-        console.log("tokenUri: ", tokenUri);
         if (tokenUri) {
-          // userNfts.current = [
-          //   { tokenUri, txHash: receipt.hash },
-          //   ...userNfts.current,
-          // ];
-          // setUserNftsCount(userNfts.current.length);
+          setNfts((prev) => {
+            return prev.map((i) => {
+              if (i.tokenUri === tokenUri) {
+                return { tokenUri, txHash: receipt.hash };
+              } else {
+                return i;
+              }
+            });
+          });
         }
       }
     } catch {}
-    // setIsLoading(false);
-    // setIsMintingLoading(false);
   };
 
   const getNftId = (
@@ -199,7 +202,7 @@ function Playground() {
 
   useEffect(() => {
     if (walletAddress) {
-      console.log("Wallet address: ", walletAddress);
+      getUserNfts();
     }
   }, [walletAddress]);
 
@@ -277,6 +280,30 @@ function Playground() {
     console.log("switch chain started");
     const newChain = await addAndSwitchChain(config);
     console.log("newChain: ", newChain);
+  };
+
+  const getUserNfts = async () => {
+    const ethersProvider = new BrowserProvider(provider!);
+    const signer = await ethersProvider.getSigner();
+    const contract = new Contract(
+      GALADRIEL_CONFIG.nftMinterContractAddress,
+      GALADRIEL_CONFIG.nftMinterAbi,
+      signer
+    );
+    let indexedUserNfts: Nft[] = [];
+    for (let i = 0; i < 5; i++) {
+      try {
+        const token = await contract.tokenOfOwnerByIndex(walletAddress, i);
+        if (token !== undefined) {
+          const tokenUri = await contract.tokenURI(token);
+          if (tokenUri) indexedUserNfts = [{ tokenUri }, ...indexedUserNfts];
+        }
+      } catch (e) {
+        break;
+      }
+    }
+    console.log(indexedUserNfts);
+    setNfts(indexedUserNfts);
   };
 
   const loggedInView = (
