@@ -24,8 +24,15 @@ function Playground() {
   const [currentAnswer, setCurrentAnswer] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const [isPostMessageLoading, setIsPostMessageLoading] = useState(false);
-  const { initModal, provider, web3Auth, isConnected, connect, logout } =
-    useWeb3Auth();
+  const {
+    initModal,
+    provider,
+    web3Auth,
+    isConnected,
+    connect,
+    logout,
+    status,
+  } = useWeb3Auth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
   const [prompt, setPrompt] = useState<string>("");
@@ -274,7 +281,11 @@ function Playground() {
         />
       </div>
       <div>
-        <button className="btn btn-outline-secondary" onClick={connect}>
+        <button
+          className="btn btn-outline-secondary"
+          onClick={connect}
+          disabled={status === "connecting" || status === "not_ready"}
+        >
           Start journey
         </button>
       </div>
