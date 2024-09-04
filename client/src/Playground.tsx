@@ -342,7 +342,7 @@ function Playground() {
                       <span style={{ fontWeight: "bold" }}>
                         {"Galadriel: "}
                       </span>
-                      <TypingEffect text={msg.content} speed={50} />
+                      <TypingEffect text={msg.content} speed={40} />
                     </div>
                   );
                 } else {
@@ -502,7 +502,7 @@ function Playground() {
             )}
             <button
               onClick={() => {
-                localStorage.removeItem("chanId");
+                localStorage.removeItem("chatId");
                 logout();
               }}
               className="btn btn-outline-secondary"
