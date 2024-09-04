@@ -153,10 +153,7 @@ function Playground() {
 
   const loggedInView = (
     <>
-      <div>Wallet address: {walletAddress}</div>
-      <h5 className="mt-4">
-        Help Frodo to ask questions and burn the ring in Mordor!
-      </h5>
+      <div className="mt-4">Wallet address: {walletAddress}</div>
       {isChatLoading ? (
         <div className="loading-indicator">
           <div className="spinner-border text-primary mt-4" role="status">
@@ -200,7 +197,7 @@ function Playground() {
 
             <div>
               <button
-                className="btn btn-primary"
+                className="btn btn-outline-secondary"
                 type="button"
                 onClick={() => postMessage(currentAnswer)}
                 disabled={isPostMessageLoading}
@@ -251,7 +248,10 @@ function Playground() {
         <h1>Frodo AI</h1>
         {isConnected && (
           <div>
-            <button onClick={() => logout()} className="card">
+            <button
+              onClick={() => logout()}
+              className="btn btn-outline-secondary"
+            >
               Log Out
             </button>
           </div>
