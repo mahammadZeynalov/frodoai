@@ -26,3 +26,8 @@
 .loading-text {
   margin-top: 23px;
 }
+
+.chat-input-wrapper {
+  display: flex;
+  gap: 40px;
+}

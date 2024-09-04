@@ -6,9 +6,14 @@ import { galadriel } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
 
+enum Role {
+  assistant = "assistant",
+  user = "user",
+}
+
 interface Message {
   id: number;
-  role: string;
+  role: Role;
   content: string;
 }
 
@@ -59,9 +64,13 @@ function Playground() {
       const transactionResponse = await galadriel.addMessage(message, aiChatId);
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
-      const newMessages = await getNewMessages(galadriel, aiChatId);
-      console.log("newMessages: ", newMessages);
-      setMessages(newMessages.filter((message) => message.id !== 0));
+      let ms: Message[] = [];
+      while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
+        const newMessages = await getNewMessages(galadriel, aiChatId);
+        ms = [...newMessages];
+        setMessages(newMessages);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -116,13 +125,12 @@ function Playground() {
   const getMessages = async (aiChatId: number) => {
     setIsChatLoading(true);
     try {
-      let ms = [];
-      while (ms.length < 2) {
+      let ms: Message[] = [];
+      while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
         const newMessages = await getNewMessages(galadriel, aiChatId);
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        console.log("newMessages: ", newMessages);
         ms = [...newMessages];
-        setMessages(newMessages.filter((message) => message.id !== 0));
+        setMessages(newMessages);
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       }
     } catch (error) {
       console.error(error);
@@ -143,7 +151,6 @@ function Playground() {
       });
   }, []);
 
-  console.log(messages);
   const loggedInView = (
     <>
       <div>Wallet address: {walletAddress}</div>
@@ -161,29 +168,32 @@ function Playground() {
         <div className="mt-4">
           {messages.map((msg, index) => {
             // we only need to mimic the typing effect for the last message
-            if (index === messages.length - 1) {
+            if (index === messages.length - 1 && msg.role === Role.assistant) {
               return (
-                <div key={msg.id} className="typing-effect">
-                  <span>{msg.role}: </span>
+                <div key={msg.id} className="typing-effect mb-2">
+                  <span style={{ fontWeight: "bold" }}>{"Galadriel: "}</span>
                   <TypingEffect text={msg.content} speed={50} />
                 </div>
               );
             } else {
               return (
-                <div key={msg.id} className="typing-effect">
-                  <span>{msg.role}: </span>
+                <div key={msg.id} className="typing-effect mb-2">
+                  <span style={{ fontWeight: "bold" }}>
+                    {msg.role === Role.assistant ? "Galadriel" : "Frodo"}:{" "}
+                  </span>
                   <span>{msg.content}</span>
                 </div>
               );
             }
           })}
-          <div className="chat-input">
+          <div className="chat-input-wrapper">
             <input
               type="text"
               className="form-control"
               placeholder="Write your answer here..."
               value={currentAnswer}
               onChange={(e) => setCurrentAnswer(e.target.value)}
+              disabled={isPostMessageLoading}
             />
             <button
               className="btn btn-primary"
@@ -259,10 +269,12 @@ async function getNewMessages(
   contract: Contract,
   chatId: number
 ): Promise<Message[]> {
-  const messages = await contract.getMessageHistory(chatId);
-  return messages.map((message: any, index: number) => ({
-    id: index,
-    role: message[0],
-    content: message.content[0].value,
-  }));
+  const messages: Message[] = await contract.getMessageHistory(chatId);
+  return messages
+    .map((message: any, index: number) => ({
+      id: index,
+      role: message[0],
+      content: message.content[0].value,
+    }))
+    .filter((i) => i.id !== 0);
 }
