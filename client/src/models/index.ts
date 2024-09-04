@@ -7,7 +7,6 @@ export enum AnswerType {
   CORRECT = "CORRECT",
   NOT_CORRECT = "NOT_CORRECT",
 }
-
 export interface Game {
   id: number;
   wallet_address: string;

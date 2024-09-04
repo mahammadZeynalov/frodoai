@@ -514,11 +514,9 @@ function getChatId(receipt: TransactionReceipt, contract: Contract) {
     try {
       const parsedLog = contract.interface.parseLog(log);
       if (parsedLog && parsedLog.name === "ChatCreated") {
-        // Second event argument
         chatId = ethers.toNumber(parsedLog.args[1]);
       }
     } catch (error) {
-      // This log might not have been from your contract, or it might be an anonymous log
       console.log("Could not parse log:", log);
     }
   }
