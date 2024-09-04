@@ -53,6 +53,7 @@ function Playground() {
   const [isGameOver, setIsGameOver] = useState(false);
   const [pageMode, setPageMode] = useState(PageMode.game);
   const [nfts, setNfts] = useState<Nft[]>([]);
+  const [isMinting, setIsMinting] = useState(false);
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -120,7 +121,7 @@ function Playground() {
     );
     if (!provider || !input) return;
 
-    // setIsLoading(true)
+    setIsMinting(true);
     try {
       const ethersProvider = new BrowserProvider(provider);
       const signer = await ethersProvider.getSigner();
@@ -133,7 +134,6 @@ function Playground() {
       const tx = await contract.initializeMint(input);
       const receipt = await tx.wait();
       console.log("initializeMint ended: ", receipt);
-      // setMessage("");
       const tokenId = getNftId(receipt, contract);
       if (tokenId !== undefined) {
         const tokenUri = await pollTokenUri(contract, tokenId);
@@ -149,7 +149,14 @@ function Playground() {
           });
         }
       }
-    } catch {}
+      getUserNfts();
+      localStorage.removeItem("chatId");
+      setAiChatId(undefined);
+    } catch (e) {
+      console.log(e);
+    } finally {
+      setIsMinting(false);
+    }
   };
 
   const getNftId = (
@@ -350,7 +357,7 @@ function Playground() {
               })}
               {!isGameOver ? (
                 <div className="chat-input-wrapper mt-3">
-                  <div style={{ width: "100%" }}>
+                  <div style={{ width: "80%" }}>
                     <input
                       type="text"
                       className="form-control"
@@ -363,7 +370,6 @@ function Playground() {
 
                   <div
                     style={{
-                      minWidth: "120px",
                       display: "flex",
                       justifyContent: "flex-end",
                     }}
@@ -390,26 +396,25 @@ function Playground() {
                 </div>
               ) : (
                 <div>
-                  <button
-                    className="btn btn-outline-secondary mt-3"
-                    type="button"
-                    onClick={() => {
-                      const message = messages[messages.length - 1].content
-                        .split("\n")
-                        .join(" ");
+                  {isMinting ? (
+                    <div>
+                      Minting NFT... You'll be able to find it in Gallery soon
+                    </div>
+                  ) : (
+                    <button
+                      className="btn btn-outline-secondary mt-3"
+                      type="button"
+                      onClick={() => {
+                        const message = messages[messages.length - 1].content
+                          .split("\n")
+                          .join(" ");
 
-                      onMint(message);
-                    }}
-                  >
-                    Mint NFT
-                  </button>
-                  <button
-                    className="btn btn-outline-secondary mt-3"
-                    type="button"
-                    onClick={switchNetwork}
-                  >
-                    Switch chain
-                  </button>
+                        onMint(message);
+                      }}
+                    >
+                      Mint NFT
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -420,12 +425,27 @@ function Playground() {
       {pageMode === PageMode.gallery && (
         <div style={{ display: "flex", gap: "20px" }} className="mt-4">
           {nfts.map((i) => (
-            <img
-              src={i.tokenUri}
-              className="img-thumbnail"
-              style={{ width: "200px" }}
-              alt={i.txHash}
-            ></img>
+            <div key={i.tokenUri}>
+              <img
+                src={i.tokenUri}
+                className="img-thumbnail"
+                style={{ width: "200px" }}
+                alt={i.txHash}
+              ></img>
+
+              {i?.txHash && (
+                <div>
+                  <a
+                    className="underline"
+                    href={`https://explorer.galadriel.com/tx/${i.txHash}`}
+                    target="_blank"
+                    style={{ color: "grey" }}
+                  >
+                    {i?.txHash?.slice(0, 12)}...
+                  </a>
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
