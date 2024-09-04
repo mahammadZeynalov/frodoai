@@ -4,6 +4,7 @@ import { Contract, ethers, TransactionReceipt } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
 import { galadriel } from "./consts";
 import promptFile from "./assets/prompt.txt";
+import TypingEffect from "./helpers";
 
 interface Message {
   id: number;
@@ -117,7 +118,6 @@ function Playground() {
     try {
       let ms = [];
       while (ms.length < 2) {
-        console.log(ms.length);
         const newMessages = await getNewMessages(galadriel, aiChatId);
         await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("newMessages: ", newMessages);
@@ -143,6 +143,7 @@ function Playground() {
       });
   }, []);
 
+  console.log(messages);
   const loggedInView = (
     <>
       <div>Wallet address: {walletAddress}</div>
@@ -155,11 +156,13 @@ function Playground() {
         </div>
       ) : (
         <div className="chat-container">
-          {messages.map((msg, index) => (
-            <div key={index}>
-              <span>{msg.role}</span>: <span>{msg.content}</span>
-            </div>
-          ))}
+          {messages
+            .filter((message, index) => message.id !== 0)
+            .map((msg, index) => (
+              <div key={index}>
+                <span>{msg.role}</span>: <span>{msg.content}</span>
+              </div>
+            ))}
           <div className="chat-input">
             <input
               type="text"

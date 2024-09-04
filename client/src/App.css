@@ -3,3 +3,16 @@
 	justify-content: space-between;
 	align-items: center;
 }
+
+.typing-effect {
+	font-family: monospace;
+	font-size: 16px;
+	white-space: pre-wrap;
+  }
+  
+  .cursor {
+	display: inline-block;
+	width: 2px;
+	background-color: black;
+	animation: blink 1s step-start infinite;
+  }
