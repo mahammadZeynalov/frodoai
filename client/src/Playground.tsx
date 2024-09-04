@@ -46,7 +46,6 @@ function Playground() {
     connect,
     logout,
     status,
-    addAndSwitchChain,
   } = useWeb3Auth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiChatId, setAiChatId] = useState<number>();
@@ -68,6 +67,7 @@ function Playground() {
   const createChat = async () => {
     setIsChatLoading(true);
     try {
+      console.log("Start Chat initiated");
       const transactionResponse = await galadrielChat.startChat(prompt);
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
@@ -89,6 +89,7 @@ function Playground() {
     if (!aiChatId) return;
     setIsPostMessageLoading(true);
     try {
+      console.log("addMessage started");
       const transactionResponse = await galadrielChat.addMessage(
         message,
         aiChatId
@@ -275,20 +276,6 @@ function Playground() {
       setIsGameOver(true);
     }
   }, [messages]);
-
-  const switchNetwork = async () => {
-    const config: CustomChainConfig = {
-      chainNamespace: CHAIN_NAMESPACES.EIP155,
-      chainId: "0xaa289",
-      tickerName: "Galadriel Devnet",
-      ticker: "GAL",
-      blockExplorerUrl: "https://explorer.galadriel.com",
-      rpcTarget: "https://devnet.galadriel.com/",
-    };
-    console.log("switch chain started");
-    const newChain = await addAndSwitchChain(config);
-    console.log("newChain: ", newChain);
-  };
 
   const getUserNfts = async () => {
     const ethersProvider = new BrowserProvider(provider!);
@@ -509,12 +496,6 @@ function Playground() {
             >
               Log Out
             </button>
-            {/* <button
-              onClick={() => switchNetwork()}
-              className="btn btn-outline-secondary"
-            >
-              Switch network
-            </button> */}
           </div>
         )}
       </header>
