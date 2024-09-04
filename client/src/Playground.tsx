@@ -440,7 +440,7 @@ function Playground() {
 
   const unloggedInView = (
     <div className="login-view">
-      <div>
+      <div style={{ textAlign: "center" }}>
         Help Frodo on his adventure by answering questions that decide the fate
         of the Ring.
       </div>
