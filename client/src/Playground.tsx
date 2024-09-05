@@ -338,17 +338,6 @@ function Playground() {
     return contract;
   };
 
-  const handleKeypress = useCallback(
-    (e: any) => {
-      if (e.keyCode == 13 && !e.shiftKey) {
-        console.log(currentAnswer);
-        onMint(currentAnswer);
-        e.preventDefault();
-      }
-    },
-    [onMint, currentAnswer]
-  );
-
   const loggedInView = (
     <>
       <div className="mt-4">
@@ -401,9 +390,6 @@ function Playground() {
                       value={currentAnswer}
                       onChange={(e) => setCurrentAnswer(e.target.value)}
                       disabled={isPostMessageLoading}
-                      onKeyDown={(e) => {
-                        handleKeypress(e);
-                      }}
                     />
                   </div>
 
