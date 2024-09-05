@@ -175,6 +175,7 @@ function Playground() {
       setPageMode(PageMode.gallery);
       setAiChatId(undefined);
       setIsGameStarted(false);
+      setIsGameOver(false);
       localStorage.removeItem("chatId");
     } catch (e) {
       console.log(e);
@@ -484,6 +485,7 @@ function Playground() {
           {isMinting && (
             <div className="mt-3">NFT is generating right now...</div>
           )}
+
           <div
             style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}
             className="mt-4"
@@ -513,6 +515,18 @@ function Playground() {
               </div>
             ))}
           </div>
+          {!!nfts.length && (
+            <div className="mt-2">
+              <a
+                className="underline"
+                href={`https://explorer.galadriel.com/address/${walletAddress}?tab=token_transfers`}
+                target="_blank"
+                style={{ color: "grey" }}
+              >
+                Check NFTs in Galadriel Block Explorer
+              </a>
+            </div>
+          )}
         </div>
       )}
     </>
