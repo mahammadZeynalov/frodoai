@@ -338,6 +338,10 @@ function Playground() {
     return contract;
   };
 
+  const openImg = (link: string) => {
+    window.open(link, "_blank");
+  };
+
   const loggedInView = (
     <>
       <div className="mt-4">
@@ -451,8 +455,9 @@ function Playground() {
                 <img
                   src={i.tokenUri}
                   className="img-thumbnail"
-                  style={{ width: "200px" }}
+                  style={{ width: "200px", cursor: "pointer" }}
                   alt={i.txHash}
+                  onClick={() => openImg(i.tokenUri)}
                 ></img>
 
                 {i?.txHash && (
@@ -510,6 +515,7 @@ function Playground() {
                 <button
                   onClick={() => setPageMode(PageMode.gallery)}
                   className="btn btn-outline-secondary"
+                  disabled={isMinting}
                 >
                   Switch to Gallery
                 </button>
