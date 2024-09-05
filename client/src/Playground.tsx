@@ -370,7 +370,7 @@ function Playground() {
                       <span style={{ fontWeight: "bold" }}>
                         {"Galadriel: "}
                       </span>
-                      <TypingEffect text={msg.content} speed={10} />
+                      <TypingEffect text={msg.content} speed={40} />
                     </div>
                   );
                 } else {
