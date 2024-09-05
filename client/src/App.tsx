@@ -10,18 +10,18 @@ import { getDefaultExternalAdapters } from "@web3auth/default-evm-adapter";
 function App() {
   const [config, setConfig] = useState(web3AuthContextConfig);
 
-  useEffect(() => {
-    const getAdapters = async () => {
-      const adapters = await getDefaultExternalAdapters({
-        options: web3AuthOptions,
-      });
-      setConfig((prev) => ({
-        ...prev,
-        adapters,
-      }));
-    };
-    getAdapters();
-  }, []);
+  // useEffect(() => {
+  //   const getAdapters = async () => {
+  //     const adapters = await getDefaultExternalAdapters({
+  //       options: web3AuthOptions,
+  //     });
+  //     setConfig((prev) => ({
+  //       ...prev,
+  //       adapters,
+  //     }));
+  //   };
+  //   getAdapters();
+  // }, []);
   return (
     <Web3AuthProvider config={config}>
       <Playground></Playground>

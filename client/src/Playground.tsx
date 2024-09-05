@@ -56,6 +56,8 @@ function Playground() {
   const [nfts, setNfts] = useState<Nft[]>([]);
   const [isMinting, setIsMinting] = useState(false);
   const [privateKey, setPrivateKey] = useState("");
+  const [balance, setBalance] = useState("");
+  const [isGameStarted, setIsGameStarted] = useState(false);
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -79,7 +81,6 @@ function Playground() {
       const transactionResponse = await chatContract.startChat(prompt);
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
-      console.log(`Chat started with message: "${prompt}"`);
 
       const chatId = getChatId(receipt, chatContract);
       if (chatId !== undefined) {
@@ -171,6 +172,10 @@ function Playground() {
         }
       }
       getUserNfts();
+      setPageMode(PageMode.gallery);
+      setAiChatId(undefined);
+      setIsGameStarted(false);
+      localStorage.removeItem("chatId");
     } catch (e) {
       console.log(e);
     } finally {
@@ -229,6 +234,7 @@ function Playground() {
   useEffect(() => {
     if (walletAddress) {
       getUserNfts();
+      getBalance();
     }
   }, [walletAddress]);
 
@@ -249,12 +255,6 @@ function Playground() {
       getPrivateKey();
     }
   }, [isConnected, provider]);
-
-  useEffect(() => {
-    if (isConnected && walletAddress && prompt && privateKey) {
-      initializeGame();
-    }
-  }, [isConnected, walletAddress, prompt, privateKey]);
 
   useEffect(() => {
     if (aiChatId) {
@@ -305,6 +305,12 @@ function Playground() {
     }
   }, [messages]);
 
+  useEffect(() => {
+    if (isGameStarted) {
+      initializeGame();
+    }
+  }, [isGameStarted]);
+
   const getUserNfts = async () => {
     const nftContract = getConnectionContract(
       privateKey,
@@ -342,100 +348,132 @@ function Playground() {
     window.open(link, "_blank");
   };
 
+  const getBalance = async () => {
+    const rpc = new EthereumRPC(provider!);
+    const balance = await rpc.getBalance();
+    setBalance(balance);
+  };
+
+  const isEnoughBalance =
+    canBeParsedToNumber(balance) && Number(balance) > 0.01;
+
   const loggedInView = (
     <>
       <div className="mt-4">
         <div>Wallet address: {walletAddress}</div>
+        <div>Balance: {balance}</div>
       </div>
 
       {pageMode === PageMode.game && (
         <>
-          {isChatLoading ? (
-            <div className="loading-indicator">
-              <div className="spinner-border text-primary mt-4" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-              <div className="loading-text">Loading the game...</div>
-            </div>
-          ) : (
-            <div className="mt-4 chat">
-              {messages.map((msg, index) => {
-                // we only need to mimic the typing effect for the last message
-                if (
-                  index === messages.length - 1 &&
-                  msg.role === Role.assistant
-                ) {
-                  return (
-                    <div key={msg.id} className="typing-effect mb-2">
-                      <span style={{ fontWeight: "bold" }}>
-                        {"Galadriel: "}
-                      </span>
-                      <TypingEffect text={msg.content} speed={40} />
-                    </div>
-                  );
-                } else {
-                  return (
-                    <div key={msg.id} className="typing-effect mb-2">
-                      <span style={{ fontWeight: "bold" }}>
-                        {msg.role === Role.assistant ? "Galadriel" : "Frodo"}:{" "}
-                      </span>
-                      <span>{msg.content}</span>
-                    </div>
-                  );
-                }
-              })}
-              {!isGameOver ? (
-                <div className="chat-input-wrapper mt-3">
-                  <div style={{ width: "100%" }}>
-                    <input
-                      type="text"
-                      className="form-control"
-                      placeholder="Write your answer here..."
-                      value={currentAnswer}
-                      onChange={(e) => setCurrentAnswer(e.target.value)}
-                      disabled={isPostMessageLoading}
-                    />
-                  </div>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      className="btn btn-outline-secondary"
-                      type="button"
-                      onClick={() => postMessage(currentAnswer)}
-                      disabled={isPostMessageLoading}
-                    >
-                      Answer
-                    </button>
-                  </div>
+          {isEnoughBalance ? (
+            isGameStarted &&
+            (isChatLoading ? (
+              <div className="loading-indicator">
+                <div className="spinner-border text-primary mt-4" role="status">
+                  <span className="visually-hidden">Loading...</span>
                 </div>
-              ) : (
-                <div>
-                  {isMinting ? (
-                    <div>
-                      Minting NFT... You'll be able to find it in Gallery soon
+                <div className="loading-text">Loading the game...</div>
+              </div>
+            ) : (
+              <div className="mt-4 chat">
+                {messages.map((msg, index) => {
+                  // we only need to mimic the typing effect for the last message
+                  if (
+                    index === messages.length - 1 &&
+                    msg.role === Role.assistant
+                  ) {
+                    return (
+                      <div key={msg.id} className="typing-effect mb-2">
+                        <span style={{ fontWeight: "bold" }}>
+                          {"Galadriel: "}
+                        </span>
+                        <TypingEffect text={msg.content} speed={40} />
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <div key={msg.id} className="typing-effect mb-2">
+                        <span style={{ fontWeight: "bold" }}>
+                          {msg.role === Role.assistant ? "Galadriel" : "Frodo"}:{" "}
+                        </span>
+                        <span>{msg.content}</span>
+                      </div>
+                    );
+                  }
+                })}
+                {!isGameOver ? (
+                  <div className="chat-input-wrapper mt-3">
+                    <div style={{ width: "100%" }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Write your answer here..."
+                        value={currentAnswer}
+                        onChange={(e) => setCurrentAnswer(e.target.value)}
+                        disabled={isPostMessageLoading}
+                      />
                     </div>
-                  ) : (
-                    <button
-                      className="btn btn-outline-secondary mt-3"
-                      type="button"
-                      onClick={() => {
-                        const message = messages[messages.length - 1].content
-                          .split("\n")
-                          .join(" ");
 
-                        onMint(message);
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
                       }}
                     >
-                      Mint NFT
-                    </button>
-                  )}
-                </div>
-              )}
+                      <button
+                        className="btn btn-outline-secondary"
+                        type="button"
+                        onClick={() => postMessage(currentAnswer)}
+                        disabled={isPostMessageLoading}
+                      >
+                        Answer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {isMinting ? (
+                      <div>
+                        Minting NFT... You'll be able to find it in Gallery soon
+                      </div>
+                    ) : (
+                      <button
+                        className="btn btn-outline-secondary mt-3"
+                        type="button"
+                        onClick={() => {
+                          const message = messages[messages.length - 1].content
+                            .split("\n")
+                            .join(" ");
+
+                          onMint(message);
+                        }}
+                      >
+                        Mint NFT
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="mt-4">
+              <div>
+                To play the game, you'll need at least 0.01 GAL (the native
+                token).
+              </div>
+              <div>
+                Follow this guide to claim your tokens:<span> </span>
+                <span>
+                  <a
+                    href="https://docs.galadriel.com/faucet"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    https://docs.galadriel.com/faucet
+                  </a>
+                </span>
+              </div>
             </div>
           )}
         </>
@@ -509,9 +547,25 @@ function Playground() {
           <div style={{ display: "flex", gap: "20px" }}>
             {pageMode === PageMode.game ? (
               <>
-                <button onClick={restart} className="btn btn-outline-secondary">
-                  Restart
-                </button>
+                {isEnoughBalance &&
+                  (!aiChatId ? (
+                    <button
+                      onClick={() => setIsGameStarted(true)}
+                      className="btn btn-outline-primary"
+                      disabled={isMinting}
+                    >
+                      Start/Continue
+                    </button>
+                  ) : (
+                    <button
+                      onClick={restart}
+                      className="btn btn-outline-secondary"
+                      disabled={isChatLoading || isMinting}
+                    >
+                      Restart
+                    </button>
+                  ))}
+
                 <button
                   onClick={() => setPageMode(PageMode.gallery)}
                   className="btn btn-outline-secondary"
@@ -578,4 +632,8 @@ async function getNewMessages(
       content: message.content[0].value.trim(),
     }))
     .filter((i, index) => index !== 0);
+}
+
+function canBeParsedToNumber(str: any) {
+  return !isNaN(str) && !isNaN(parseFloat(str));
 }
