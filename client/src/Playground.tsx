@@ -1,12 +1,13 @@
 import "./App.css";
-import { useEffect, useState } from "react";
-import { BrowserProvider, Contract, ethers, TransactionReceipt } from "ethers";
+import { useCallback, useEffect, useState } from "react";
+import { Contract, ethers, TransactionReceipt, Wallet } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
-import { GALADRIEL_CONFIG, galadrielChat } from "./consts";
+import { GALADRIEL_CONFIG } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
 import landingImage from "./assets/frodo_ai.png";
 import { ulid } from "ulid";
+import EthereumRPC from "./web3RPC";
 
 enum Role {
   assistant = "assistant",
@@ -54,6 +55,7 @@ function Playground() {
   const [pageMode, setPageMode] = useState(PageMode.game);
   const [nfts, setNfts] = useState<Nft[]>([]);
   const [isMinting, setIsMinting] = useState(false);
+  const [privateKey, setPrivateKey] = useState("");
 
   const initializeGame = async () => {
     const chatId = localStorage.getItem("chatId");
@@ -65,15 +67,21 @@ function Playground() {
   };
 
   const createChat = async () => {
+    if (!provider) return;
     setIsChatLoading(true);
     try {
       console.log("Start Chat initiated");
-      const transactionResponse = await galadrielChat.startChat(prompt);
+      const chatContract = getConnectionContract(
+        privateKey,
+        GALADRIEL_CONFIG.chatContractAddress,
+        GALADRIEL_CONFIG.chatAbi
+      );
+      const transactionResponse = await chatContract.startChat(prompt);
       const receipt = await transactionResponse.wait();
       console.log(`Message sent, tx hash: ${receipt.hash}`);
       console.log(`Chat started with message: "${prompt}"`);
 
-      const chatId = getChatId(receipt, galadrielChat);
+      const chatId = getChatId(receipt, chatContract);
       if (chatId !== undefined) {
         localStorage.setItem("chatId", chatId.toString());
       }
@@ -86,7 +94,7 @@ function Playground() {
   };
 
   const postMessage = async (message: string) => {
-    if (!aiChatId) return;
+    if (!aiChatId || !provider) return;
     setIsPostMessageLoading(true);
     try {
       console.log("addMessage started");
@@ -94,7 +102,12 @@ function Playground() {
         ...prev,
         { role: Role.user, content: message, id: ulid() },
       ]);
-      const transactionResponse = await galadrielChat.addMessage(
+      const chatContract = getConnectionContract(
+        privateKey,
+        GALADRIEL_CONFIG.chatContractAddress,
+        GALADRIEL_CONFIG.chatAbi
+      );
+      const transactionResponse = await chatContract.addMessage(
         message,
         aiChatId
       );
@@ -104,7 +117,7 @@ function Playground() {
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        const newMessages = await getNewMessages(galadrielChat, aiChatId);
+        const newMessages = await getNewMessages(chatContract, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
         setCurrentAnswer("");
@@ -130,20 +143,21 @@ function Playground() {
 
     setIsMinting(true);
     try {
-      const ethersProvider = new BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
-      const contract = new Contract(
+      const nftContract = getConnectionContract(
+        privateKey,
         GALADRIEL_CONFIG.nftMinterContractAddress,
-        GALADRIEL_CONFIG.nftMinterAbi,
-        signer
+        GALADRIEL_CONFIG.nftMinterAbi
       );
       console.log("initializeMint started");
-      const tx = await contract.initializeMint(input);
+      const tx = await nftContract.initializeMint(input);
       const receipt = await tx.wait();
       console.log("initializeMint ended: ", receipt);
-      const tokenId = getNftId(receipt, contract);
+      localStorage.removeItem("chatId");
+      setAiChatId(undefined);
+      const tokenId = getNftId(receipt, nftContract);
       if (tokenId !== undefined) {
-        const tokenUri = await pollTokenUri(contract, tokenId);
+        const tokenUri = await pollTokenUri(nftContract, tokenId);
+        console.log("token uri: ", tokenUri);
         if (tokenUri) {
           setNfts((prev) => {
             return prev.map((i) => {
@@ -157,8 +171,6 @@ function Playground() {
         }
       }
       getUserNfts();
-      localStorage.removeItem("chatId");
-      setAiChatId(undefined);
     } catch (e) {
       console.log(e);
     } finally {
@@ -228,15 +240,21 @@ function Playground() {
         const address = await signer.getAddress();
         setWalletAddress(address);
       };
+      const getPrivateKey = async () => {
+        const ethereumRPC = new EthereumRPC(provider);
+        const key = await ethereumRPC.getPrivateKey();
+        setPrivateKey(key);
+      };
       fetchAddress();
+      getPrivateKey();
     }
   }, [isConnected, provider]);
 
   useEffect(() => {
-    if (isConnected && walletAddress && prompt) {
+    if (isConnected && walletAddress && prompt && privateKey) {
       initializeGame();
     }
-  }, [isConnected, walletAddress, prompt]);
+  }, [isConnected, walletAddress, prompt, privateKey]);
 
   useEffect(() => {
     if (aiChatId) {
@@ -246,10 +264,15 @@ function Playground() {
 
   const getMessages = async (aiChatId: number) => {
     setIsChatLoading(true);
+    const chatContract = getConnectionContract(
+      privateKey,
+      GALADRIEL_CONFIG.chatContractAddress,
+      GALADRIEL_CONFIG.chatAbi
+    );
     try {
       let ms: Message[] = [];
       while (!ms.length || ms[ms.length - 1]?.role === Role.user) {
-        const newMessages = await getNewMessages(galadrielChat, aiChatId);
+        const newMessages = await getNewMessages(chatContract, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
         await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -283,19 +306,17 @@ function Playground() {
   }, [messages]);
 
   const getUserNfts = async () => {
-    const ethersProvider = new BrowserProvider(provider!);
-    const signer = await ethersProvider.getSigner();
-    const contract = new Contract(
+    const nftContract = getConnectionContract(
+      privateKey,
       GALADRIEL_CONFIG.nftMinterContractAddress,
-      GALADRIEL_CONFIG.nftMinterAbi,
-      signer
+      GALADRIEL_CONFIG.nftMinterAbi
     );
     let indexedUserNfts: Nft[] = [];
     for (let i = 0; i < 10; i++) {
       try {
-        const token = await contract.tokenOfOwnerByIndex(walletAddress, i);
+        const token = await nftContract.tokenOfOwnerByIndex(walletAddress, i);
         if (token !== undefined) {
-          const tokenUri = await contract.tokenURI(token);
+          const tokenUri = await nftContract.tokenURI(token);
           if (tokenUri) indexedUserNfts = [{ tokenUri }, ...indexedUserNfts];
         }
       } catch (e) {
@@ -305,6 +326,28 @@ function Playground() {
     console.log(indexedUserNfts);
     setNfts(indexedUserNfts);
   };
+
+  const getConnectionContract = (
+    privateKey: string,
+    contractAddress: string,
+    abi: any
+  ) => {
+    const provider = new ethers.JsonRpcProvider(GALADRIEL_CONFIG.rpcUrl);
+    const wallet = new Wallet(privateKey, provider);
+    const contract = new Contract(contractAddress, abi, wallet);
+    return contract;
+  };
+
+  const handleKeypress = useCallback(
+    (e: any) => {
+      if (e.keyCode == 13 && !e.shiftKey) {
+        console.log(currentAnswer);
+        onMint(currentAnswer);
+        e.preventDefault();
+      }
+    },
+    [onMint, currentAnswer]
+  );
 
   const loggedInView = (
     <>
@@ -334,7 +377,7 @@ function Playground() {
                       <span style={{ fontWeight: "bold" }}>
                         {"Galadriel: "}
                       </span>
-                      <TypingEffect text={msg.content} speed={40} />
+                      <TypingEffect text={msg.content} speed={10} />
                     </div>
                   );
                 } else {
@@ -358,6 +401,9 @@ function Playground() {
                       value={currentAnswer}
                       onChange={(e) => setCurrentAnswer(e.target.value)}
                       disabled={isPostMessageLoading}
+                      onKeyDown={(e) => {
+                        handleKeypress(e);
+                      }}
                     />
                   </div>
 
@@ -406,33 +452,38 @@ function Playground() {
       )}
 
       {pageMode === PageMode.gallery && (
-        <div
-          style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}
-          className="mt-4"
-        >
-          {nfts.map((i) => (
-            <div key={i.tokenUri}>
-              <img
-                src={i.tokenUri}
-                className="img-thumbnail"
-                style={{ width: "200px" }}
-                alt={i.txHash}
-              ></img>
+        <div>
+          {isMinting && (
+            <div className="mt-3">NFT is generating right now...</div>
+          )}
+          <div
+            style={{ display: "flex", gap: "20px", flexWrap: "wrap" }}
+            className="mt-4"
+          >
+            {nfts.map((i) => (
+              <div key={i.tokenUri}>
+                <img
+                  src={i.tokenUri}
+                  className="img-thumbnail"
+                  style={{ width: "200px" }}
+                  alt={i.txHash}
+                ></img>
 
-              {i?.txHash && (
-                <div>
-                  <a
-                    className="underline"
-                    href={`https://explorer.galadriel.com/tx/${i.txHash}`}
-                    target="_blank"
-                    style={{ color: "grey" }}
-                  >
-                    {i?.txHash?.slice(0, 12)}...
-                  </a>
-                </div>
-              )}
-            </div>
-          ))}
+                {i?.txHash && (
+                  <div>
+                    <a
+                      className="underline"
+                      href={`https://explorer.galadriel.com/tx/${i.txHash}`}
+                      target="_blank"
+                      style={{ color: "grey" }}
+                    >
+                      {i?.txHash?.slice(0, 12)}...
+                    </a>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </>
