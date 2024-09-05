@@ -356,7 +356,7 @@ function Playground() {
   };
 
   const isEnoughBalance =
-    canBeParsedToNumber(balance) && Number(balance) > 0.01;
+    canBeParsedToNumber(balance) && Number(balance) >= 0.01;
 
   const loggedInView = (
     <>
