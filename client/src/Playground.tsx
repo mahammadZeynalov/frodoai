@@ -1,5 +1,5 @@
 import "./App.css";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Contract, ethers, TransactionReceipt, Wallet } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
 import { GALADRIEL_CONFIG } from "./consts";
