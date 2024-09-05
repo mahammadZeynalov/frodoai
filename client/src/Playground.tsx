@@ -2,7 +2,7 @@ import "./App.css";
 import { useEffect, useState } from "react";
 import { Contract, ethers, TransactionReceipt, Wallet } from "ethers";
 import { useWeb3Auth } from "@web3auth/modal-react-hooks";
-import { GALADRIEL_CONFIG } from "./consts";
+import { ADVENTURE_OUTCOME_PROMPT, GALADRIEL_CONFIG } from "./consts";
 import promptFile from "./assets/prompt.txt";
 import TypingEffect from "./helpers";
 import landingImage from "./assets/frodo_ai.png";
@@ -121,11 +121,11 @@ function Playground() {
         const newMessages = await getNewMessages(chatContract, aiChatId);
         ms = [...newMessages];
         setMessages(newMessages);
-        setCurrentAnswer("");
       }
     } catch (error) {
       console.error(error);
     } finally {
+      setCurrentAnswer("");
       setIsPostMessageLoading(false);
     }
   };
@@ -136,10 +136,21 @@ function Playground() {
   };
 
   const onMint = async (val: string) => {
-    const input = (val.replace(HTML_REGULAR, "") || "").replace(
-      /(<br\s*\/?>\s*)+$/,
-      ""
-    );
+    const input = val;
+    console.log("input: ", input);
+    let outcomePrompt = "";
+    if (input.includes("CORRECT-3")) {
+      outcomePrompt = ADVENTURE_OUTCOME_PROMPT["CORRECT-3"];
+    } else if (input.includes("CORRECT-2")) {
+      outcomePrompt = ADVENTURE_OUTCOME_PROMPT["CORRECT-2"];
+    } else if (input.includes("CORRECT-1")) {
+      outcomePrompt = ADVENTURE_OUTCOME_PROMPT["CORRECT-1"];
+    } else if (input.includes("CORRECT-0")) {
+      outcomePrompt = ADVENTURE_OUTCOME_PROMPT["CORRECT-0"];
+    } else {
+      outcomePrompt = input;
+    }
+    console.log(outcomePrompt);
     if (!provider || !input) return;
 
     setIsMinting(true);
@@ -150,7 +161,7 @@ function Playground() {
         GALADRIEL_CONFIG.nftMinterAbi
       );
       console.log("initializeMint started");
-      const tx = await nftContract.initializeMint(input);
+      const tx = await nftContract.initializeMint(outcomePrompt);
       const receipt = await tx.wait();
       console.log("initializeMint ended: ", receipt);
       localStorage.removeItem("chatId");
@@ -443,10 +454,7 @@ function Playground() {
                         className="btn btn-outline-secondary mt-3"
                         type="button"
                         onClick={() => {
-                          const message = messages[messages.length - 1].content
-                            .split("\n")
-                            .join(" ");
-
+                          const message = messages[messages.length - 1].content;
                           onMint(message);
                         }}
                       >
