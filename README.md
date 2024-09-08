@@ -15,7 +15,29 @@ Answer questions posed by characters from Middle-earth and influence the fate of
 - **Blockchain** Solidity contracts using the Galadriel.
 - **Authentication** Integration with Web3Auth for seamless login and embedded accounts.
 
-### Smart Contracts
+## Smart Contracts
 
 - Chat (Galadriel devnet): `0xE8775D4b4F016F0ED9Cc30B6fF604676371E8457`
 - NFT minting (Galadriel devnet): `0xC59Df6A81bB91F71a08C092d8Bb21664498ceB01`
+
+You can use them, or deploy contract by your own. You can find contracts in web3 folder.
+
+## Run application
+
+1. Checkout client folder
+
+   ```bash
+   cd client
+   ```
+
+2. Install dependencies
+
+   ```bash
+   npm install
+   ```
+
+3. Run the application
+
+   ```bash
+   npm run start
+   ```
