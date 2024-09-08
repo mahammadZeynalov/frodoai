@@ -3,6 +3,10 @@
 FrodoAI is an interactive quiz game where you embark on an adventure as Frodo Baggins from The Lord of the Rings.
 Answer questions posed by characters from Middle-earth and influence the fate of the One Ring. Will you destroy it, or will it remain lost?
 
+The application leverages the Galadriel to interact directly with OpenAI from smart contracts. Instead of making requests to OpenAI through a backend server, the smart contracts communicate with OpenAI, allowing seamless integration and interaction with the AI model within the decentralized ecosystem. This approach enhances security and decentralization by eliminating the need for a centralized backend for AI requests.
+
+Additionally, the Web3Auth library is integrated to simplify user onboarding. Its embedded accounts feature allows Web2 users to seamlessly create accounts and start engaging with the application without requiring prior knowledge of Web3, making it accessible to a broader audience.
+
 ## Features:
 
 - **Character-driven Questions:** Each question is presented by a unique character from The Lord of the Rings.
