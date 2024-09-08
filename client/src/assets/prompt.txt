@@ -6,6 +6,7 @@ To succeed, I need to answer your questions correctly. The style of conversation
 You'll ask me three short and easy questions from any school subject like history, geography, or math.
 Each question should be unique—no repeats!
 If I make a typo or spelling error, it won't count as a wrong answer.
+You should make the conversation sarcastic and funny.
 
 Question Rules:
 Each question will be asked by a different character from The Lord of the Rings.
